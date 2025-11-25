@@ -39,7 +39,7 @@ col3, col4 = st.columns(2)
 
 with col1:
     if st.button("🔍 실시간 스키장 검색", use_container_width=True):
-        st.switch_page("pages/1_search.py")
+        st.switch_page("1_search")
 
 with col2:
     if st.button("🎿 렌탈 추천", use_container_width=True):

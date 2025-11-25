@@ -39,16 +39,16 @@ col3, col4 = st.columns(2)
 
 with col1:
     if st.button("🔍 실시간 스키장 검색", use_container_width=True):
-        st.switch_page("pages/1_🔍_search.py")
+        st.switch_page("pages/1_search.py")
 
 with col2:
     if st.button("🎿 렌탈 추천", use_container_width=True):
-        st.switch_page("pages/2_🎿_rental.py")
+        st.switch_page("pages/2_rental.py")
 
 with col3:
     if st.button("🏨 숙소 추천", use_container_width=True):
-        st.switch_page("pages/3_🏨_lodging.py")
+        st.switch_page("pages/3_lodging.py")
 
 with col4:
     if st.button("🤖 챗봇 서비스", use_container_width=True):
-        st.switch_page("pages/4_🤖_chatbot.py")
+        st.switch_page("pages/4_chatbot.py")

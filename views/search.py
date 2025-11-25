@@ -90,3 +90,9 @@ else:
                     
                     <b>⏳ 운영현황:</b> {r.get('status', '정보없음')} <br>
                     <b>💰 이용요금:</b><br>
+# 홈버튼
+def go_home():
+    st.switch_page("app.py")
+st.button("🏠 초기 화면으로 돌아가기", on_click=go_home)
+
+st.markdown("## 🔍 실시간 스키장 검색")

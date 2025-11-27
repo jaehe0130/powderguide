@@ -1,16 +1,12 @@
 import streamlit as st
 from openai import OpenAI
-import os
 
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 
-st.title("🤖 파우디 챗봇")
-st.write("파우디가 너의 스키/보드 성향을 분석해 사용자 카드를 만들어줄게 ⛷️🏂")
-
-if "messages" not in st.session_state:
-    st.session_state.messages = [
-        {"role": "system", "content": 
-         
+# ------------------------
+# SYSTEM PROMPT
+# ------------------------
+SYSTEM_PROMPT = """
 너는 PowderGuide의 전용 캐릭터 "파우디(Powdi)"야.  
 눈송이 모자를 쓰고 다니며 밝고 다정한 성격이야.  
 말투는 너무 유치하지 않지만, 따뜻하고 친근하게 말해.
@@ -41,13 +37,29 @@ if "messages" not in st.session_state:
 
 절대 AI나 시스템이라는 말은 하지 않고,  
 끝까지 ‘파우디’라는 캐릭터로 대화해.
-}
+"""
+
+# ------------------------
+# 초기 메시지 설정
+# ------------------------
+if "messages" not in st.session_state:
+    st.session_state.messages = [
+        {"role": "system", "content": SYSTEM_PROMPT}
     ]
 
+st.title("🤖 파우디 챗봇")
+st.write("파우디가 너의 스키/보드 성향을 분석해 사용자 카드를 만들어줄게 ⛷️🏂")
+
+# ------------------------
+# 기존 메시지 출력
+# ------------------------
 for msg in st.session_state.messages:
     if msg["role"] != "system":
         st.chat_message(msg["role"]).write(msg["content"])
 
+# ------------------------
+# 사용자 입력
+# ------------------------
 user_msg = st.chat_input("파우디에게 말해보세요!")
 if user_msg:
     st.session_state.messages.append({"role": "user", "content": user_msg})

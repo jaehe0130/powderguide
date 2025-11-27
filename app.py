@@ -22,18 +22,18 @@ st.markdown("### 🔍 빠른 이동")
 col1, col2, col3, col4 = st.columns(4)
 
 with col1:
-    if st.button("❄️ 챗봇"):
+    if st.button("❄️ 스키장 정보"):
         st.switch_page("pages/1_search.py")
 
 with col2:
-    if st.button("🏔️ 눈 상태"):
-        st.switch_page("pages/2_🏔️_Snow_Status.py")
+    if st.button("🏔️ 장비 랜탈"):
+        st.switch_page("pages/2_rental.py")
 
 with col3:
-    if st.button("📸 사진 분석"):
-        st.switch_page("pages/3_📸_Photo_Analyze.py")
+    if st.button("📸 숙소 정보"):
+        st.switch_page("pages/3_lodging.py")
 
 with col4:
-    if st.button("📚 스키장 정보"):
-        st.switch_page("pages/4_📚_Resort_Info.py")
+    if st.button("📚 챗봇 서비스"):
+        st.switch_page("pages/4_chatbot.py")
 

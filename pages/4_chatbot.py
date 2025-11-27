@@ -66,11 +66,13 @@ if user_msg:
     st.chat_message("user").write(user_msg)
 
     response = client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=st.session_state.messages,
-    )
+    model="gpt-4o-mini",
+    messages=st.session_state.messages,
+)
 
-    bot_reply = response.choices[0].message["content"]
-    st.session_state.messages.append({"role": "assistant", "content": bot_reply})
-    st.chat_message("assistant").write(bot_reply)
+# 최신 SDK에서 content 접근 방식
+bot_reply = response.choices[0].message.content
+
+st.session_state.messages.append({"role": "assistant", "content": bot_reply})
+st.chat_message("assistant").write(bot_reply)
 

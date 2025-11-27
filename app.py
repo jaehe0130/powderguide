@@ -33,7 +33,7 @@ st.markdown("""
 
 # 제목
 st.markdown("""
-<h1 style='text-align:center; font-size:50px;'>❄️ PowderGuide AI</h1>
+<h1 style='text-align:center; font-size:50px;'>❄️PowderGuide❄️</h1>
 <p style='text-align:center; font-size:18px; color:gray; margin-top:-10px;'>
 스키장 실시간 검색 · 렌탈 · 숙소 · AI 챗봇
 </p>

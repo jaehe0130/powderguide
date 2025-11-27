@@ -1,6 +1,6 @@
 import streamlit as st
 
-st.set_page_config(layout="wide", page_icon="❄️", page_title="PowderGuide", page_icon="❄️")
+st.set_page_config(layout="wide",  page_title="PowderGuide", page_icon="❄️")
 
 # 버튼 스타일
 st.markdown("""

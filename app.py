@@ -6,14 +6,41 @@ st.set_page_config(
     page_icon="❄️"
 )
 
-# ------------------ 제목 영역 ------------------
+# ------------------ 스타일 ------------------
+st.markdown("""
+<style>
+.card {
+    padding: 20px;
+    border-radius: 15px;
+    border: 1px solid #e5e5e5;
+    background-color: #fafafa;
+    transition: 0.2s;
+    cursor: pointer;
+}
+.card:hover {
+    background-color: #f1f8ff;
+    border-color: #4da3ff;
+    transform: scale(1.02);
+}
+.card-title {
+    font-size: 22px;
+    font-weight: 700;
+    margin-bottom: 8px;
+}
+.card-desc {
+    font-size: 15px;
+    color: #555;
+    line-height: 1.5;
+}
+</style>
+""", unsafe_allow_html=True)
+
+# ------------------ 제목 ------------------
 st.markdown(
     """
-    <h1 style='text-align:center; font-size:50px; margin-bottom:10px;'>
-        ❄️ PowderGuide AI
-    </h1>
+    <h1 style='text-align:center; font-size:50px;'>❄️ PowderGuide AI</h1>
     <p style='text-align:center; font-size:18px; color:gray; margin-top:-10px;'>
-        스키장 실시간 정보 · 렌탈 · 숙소 · AI 챗봇
+        스키장 실시간 검색 · 렌탈 · 숙소 · AI 챗봇
     </p>
     """,
     unsafe_allow_html=True
@@ -21,69 +48,54 @@ st.markdown(
 
 st.markdown("---")
 
-# ------------------ 빠른 이동 버튼 ------------------
-st.markdown("### 🔍 빠른 이동")
+# ------------------ 카드 버튼 4개 ------------------
+col1, col2 = st.columns(2)
+col3, col4 = st.columns(2)
 
-col1, col2, col3, col4 = st.columns(4)
+# ----- 카드 함수 -----
+def card(label, title, desc, page):
+    with st.container():
+        clicked = st.button(
+            f"{label}",
+            key=page,
+            use_container_width=True
+        )
+        st.markdown(
+            f"""
+            <div class='card'>
+                <div class='card-title'>{title}</div>
+                <div class='card-desc'>{desc}</div>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+        if clicked:
+            st.switch_page(page)
 
+# ----- 각 카드 구성 -----
 with col1:
-    if st.button("🔍 스키장 검색", use_container_width=True):
-        st.switch_page("pages/1_search.py")
+    card("🔍 스키장 검색", 
+         "실시간 스키장 검색",
+         "• 스키장 영업 여부\n• 슬로프 개방 정보\n• 날씨 & 적설량",
+         "pages/1_search.py")
 
 with col2:
-    if st.button("🎿 렌탈 정보", use_container_width=True):
-        st.switch_page("pages/2_rental.py")
+    card("🎿 렌탈 정보", 
+         "스키/보드 렌탈 정보",
+         "• 스키/보드 렌탈 가격\n• 장비별 비교",
+         "pages/2_rental.py")
 
 with col3:
-    if st.button("🏨 숙소 정보", use_container_width=True):
-        st.switch_page("pages/3_lodging.py")
+    card("🏨 숙소 정보", 
+         "스키장 주변 숙소 검색",
+         "• 주변 숙소 탐색\n• 가격/거리 필터링",
+         "pages/3_lodging.py")
 
 with col4:
-    if st.button("🤖 AI 챗봇", use_container_width=True):
-        st.switch_page("pages/4_chatbot.py")
-
-st.markdown("---")
-
-# ------------------ 설명 카드 ------------------
-st.markdown("### 🧊 PowderGuide 기능 안내")
-
-c1, c2 = st.columns(2)
-
-with c1:
-    st.markdown(
-        """
-        #### ❄️ 실시간 스키장 검색  
-        - 스키장 영업 여부  
-        - 슬로프 개방 정보  
-        - 날씨 & 적설량  
-        """
-    )
-
-    st.markdown(
-        """
-        #### 🤖 AI 챗봇  
-        - 스키장 추천  
-        - 장비 추천  
-        - 초보자 강습 설명  
-        """
-    )
-
-with c2:
-    st.markdown(
-        """
-        #### 🎿 렌탈 정보  
-        - 스키/보드 렌탈 가격  
-        - 장비별 비교  
-        """
-    )
-
-    st.markdown(
-        """
-        #### 🏨 숙소 정보  
-        - 스키장 주변 숙소 검색  
-        - 가격/거리 필터링  
-        """
-    )
+    card("🤖 AI 챗봇", 
+         "PowderGuide AI 챗봇",
+         "• 스키장 추천\n• 장비 추천\n• 초보자 강습 설명",
+         "pages/4_chatbot.py")
 
 st.markdown("---")
 

@@ -30,17 +30,12 @@ SYSTEM_PROMPT = """
 3. 모든 정보가 모이면 사용자 카드 생성.
 4. 카드 생성 후, 슬로프 추천, 장비 성향 추천까지 제공.
 
-[말투 예시]
-- "오 좋아! 참고했어 ⛷️ 다음으로 궁금한 게 있는데!"
-- "대답 고마워! 그러면 이번에는 실력 레벨을 알려줄래?"
-- "우와, 멋진 스타일이네! 이번 시즌 목표는 뭐야?"
-
 절대 AI나 시스템이라는 말은 하지 않고,  
 끝까지 ‘파우디’라는 캐릭터로 대화해.
 """
 
 # ------------------------
-# 초기 메시지 설정
+# 세션 상태 초기화
 # ------------------------
 if "messages" not in st.session_state:
     st.session_state.messages = [
@@ -58,21 +53,24 @@ for msg in st.session_state.messages:
         st.chat_message(msg["role"]).write(msg["content"])
 
 # ------------------------
-# 사용자 입력
+# 사용자 입력 처리
 # ------------------------
 user_msg = st.chat_input("파우디에게 말해보세요!")
+
 if user_msg:
+    # 유저 메시지 저장 + 출력
     st.session_state.messages.append({"role": "user", "content": user_msg})
     st.chat_message("user").write(user_msg)
 
+    # GPT 호출
     response = client.chat.completions.create(
-    model="gpt-4o-mini",
-    messages=st.session_state.messages,
-)
+        model="gpt-4o-mini",
+        messages=st.session_state.messages
+    )
 
-# 최신 SDK에서 content 접근 방식
-bot_reply = response.choices[0].message.content
+    bot_reply = response.choices[0].message.content
 
-st.session_state.messages.append({"role": "assistant", "content": bot_reply})
-st.chat_message("assistant").write(bot_reply)
+    # 저장 + 출력
+    st.session_state.messages.append({"role": "assistant", "content": bot_reply})
+    st.chat_message("assistant").write(bot_reply)
 

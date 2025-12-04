@@ -9,7 +9,7 @@ from io import BytesIO
 from PIL import Image
 from datetime import datetime
 
-st.write(st.secrets["GCP_SERVICE_ACCOUNT"])
+
 # =====================================================================
 # 1) SYSTEM PROMPT 정의 (기존 코드 그대로 사용)
 # =====================================================================

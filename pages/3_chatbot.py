@@ -39,9 +39,10 @@ def save_user_card_to_sheet(user_name, final_type, card_text, conversation):
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     history = "\n".join(
         f"{m['role']}: {m['content']}"
-        for m in conversation
+        for m in conversation 
         if m["role"] in ("user", "assistant")
     )
+
 
     ws.append_row([timestamp, user_name, final_type, card_text, history])
 
@@ -190,7 +191,8 @@ if not st.session_state.card_done:
             model="gpt-4o-mini",
             messages=st.session_state.messages,
         )
-        reply = response.choices[0].message["content"]
+        reply = response.choices[0].message.content
+
 
         st.session_state.messages.append({"role": "assistant", "content": reply})
         with st.chat_message("assistant"):

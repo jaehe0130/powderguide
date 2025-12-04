@@ -2,8 +2,8 @@ import streamlit as st
 import requests
 import json
 import gspread
-from google.oauth2.service_account import Credentials
 import re
+from google.oauth2.service_account import Credentials
 from openai import OpenAI
 
 # ============================================

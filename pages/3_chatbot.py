@@ -268,3 +268,7 @@ if st.session_state.first_greeted and not st.session_state.card_done:
             img = generate_tarot_image(final_type)
             if img:
                 st.image(img, caption=f"{final_type} 타로 카드", width=450)
+
+import inspect
+st.code(inspect.getsource(generate_tarot_image))
+

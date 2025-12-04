@@ -152,16 +152,17 @@ def generate_tarot_image(final_type):
 
     prompt = (
         f"Tarot card style illustration of a {final_type} skiing or snowboarding, "
-        "fantasy lighting, ornate gold border, magical atmosphere, highly detailed"
+        "fantasy lighting, ornate gold border, magical tarot atmosphere, elegant, highly detailed"
     )
 
     url = "https://api.stability.ai/v2beta/stable-image/generate/core"
 
     headers = {
         "Authorization": f"Bearer {key}",
+        "Accept": "image/*",        # ← Stability 문서 필수
     }
 
-    # multipart/form-data 필수 요소
+    # multipart/form-data 강제
     files = {"none": (None, "")}
 
     data = {

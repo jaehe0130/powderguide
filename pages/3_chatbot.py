@@ -63,7 +63,6 @@ SYSTEM_PROMPT = """
 ────────────────────────────────────────────────────────
 【사용자 카드 출력 형식】
 ────────────────────────────────────────────────────────
-모든 정보가 모이면 아래 형식을 그대로 출력한다.
 
 ============================
 🎴 **PowderGuide 사용자 카드**
@@ -146,33 +145,39 @@ def save_user_card_to_sheet(user_name, final_type, card_text):
 
 
 # ============================================
-# 4) Stability AI 타로카드 이미지 생성
+# 4) Stability AI 타로카드 이미지 생성 (multipart/form-data)
 # ============================================
 def generate_tarot_image(final_type):
     key = st.secrets["STABILITY_API_KEY"]
 
-    prompt = f"Tarot card style illustration of a {final_type} skiing or snowboarding, mystical atmosphere, ornate golden border, fantasy lighting, premium art style"
+    prompt = (
+        f"Tarot card style illustration of a {final_type} skiing or snowboarding, "
+        "fantasy lighting, ornate gold border, magical atmosphere, highly detailed"
+    )
 
     url = "https://api.stability.ai/v2beta/stable-image/generate/core"
 
     headers = {
         "Authorization": f"Bearer {key}",
-        "Accept": "image/*"
     }
+
+    # multipart/form-data 필수 요소
+    files = {"none": (None, "")}
 
     data = {
         "prompt": prompt,
-        "output_format": "png"
+        "aspect_ratio": "1:2",
+        "output_format": "png",
     }
 
-    resp = requests.post(url, headers=headers, data=data)
+    response = requests.post(url, headers=headers, files=files, data=data)
 
-    if resp.status_code != 200:
+    if response.status_code != 200:
         st.error("Stability API 오류 발생")
-        st.write(resp.text)
+        st.write(response.text)
         return None
 
-    return resp.content
+    return response.content
 
 
 # ============================================
@@ -185,7 +190,7 @@ client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 # 6) Streamlit UI 구성
 # ============================================
 st.title("⛷️ 파우디 챗봇")
-st.write("스키/보드 성향을 분석해 사용자 타로카드를 생성해줘요!")
+st.write("스키/보드 성향을 분석하여 타로 카드 스타일로 만들어줘요!")
 
 
 # 세션 상태 초기화
@@ -264,11 +269,7 @@ if st.session_state.first_greeted and not st.session_state.card_done:
 
             st.success("Google Sheets 저장 완료!")
 
-            # 이미지 생성
+            # Stability 이미지 생성
             img = generate_tarot_image(final_type)
             if img:
                 st.image(img, caption=f"{final_type} 타로 카드", width=450)
-
-import inspect
-st.code(inspect.getsource(generate_tarot_image))
-

@@ -9,7 +9,8 @@ from openai import OpenAI
 # ============================================
 # 1) SYSTEM PROMPT
 # ============================================
-SYSTEM_PROMPT = """너는 PowderGuide의 전용 캐릭터 "파우디(Powdi)"야.  
+SYSTEM_PROMPT = """
+너는 PowderGuide의 전용 캐릭터 "파우디(Powdi)"야.  
 밝고 다정하며, 스키/보드 문화를 누구보다 잘 아는 상담 캐릭터야.  
 너의 역할은 사용자에게 질문하며 정보를 자연스럽게 수집한 뒤,  
 모든 정보가 충분해지면 단 한 번만 ‘PowderGuide 사용자 카드’를 만들어주는 것이다.
@@ -20,10 +21,9 @@ SYSTEM_PROMPT = """너는 PowderGuide의 전용 캐릭터 "파우디(Powdi)"야.
 1. 질문은 반드시 한 번에 하나만 한다.
 2. 대화 중에는 절대 타입을 언급하거나 암시하지 않는다.
 3. 정보 수집이 끝날 때까지 분석 결과를 보여주지 않는다.
-4. 답변 톤은 따뜻하고 친근하며, 부드럽게 대화를 이끈다.
-5. 충분히 수집되었다고 판단되면 자동으로 사용자 카드를 생성한다.
-6. 카드를 생성한 이후에는 추가 대화를 하지 않는다 (침묵).
-7. 카드는 아래 형식으로 반드시 출력해야 한다.
+4. 답변 톤은 따뜻하고 친근하며 자연스럽다.
+5. 충분히 정보를 수집했다고 판단하면 자동으로 사용자 카드를 생성한다.
+6. 카드를 생성한 이후에는 추가 대화를 하지 않는다.
 
 ────────────────────────────────────────────────────────
 【수집해야 하는 정보】
@@ -31,7 +31,7 @@ SYSTEM_PROMPT = """너는 PowderGuide의 전용 캐릭터 "파우디(Powdi)"야.
 - 스키어인지 보더인지
 - 실력 (초보/중급/상급)
 - 라이딩 스타일 (속도/트릭/카빙/파크/파우더/안정형 등)
-- 성향 (기질형 키워드 몇 개 또는 MBTI)
+- 성향 (기질형 키워드 또는 MBTI)
 - 선호 슬로프 난이도
 - 시즌 목표
 - 예산대
@@ -39,7 +39,7 @@ SYSTEM_PROMPT = """너는 PowderGuide의 전용 캐릭터 "파우디(Powdi)"야.
 - 함께 타고 싶은 동료 스타일
 
 ────────────────────────────────────────────────────────
-【PowderGuide 공식 12 Archetype】
+【공식 12 Archetype】
 ────────────────────────────────────────────────────────
 1. 도전형(Challenger)
 2. 화려한 기술형(Flash Styler)
@@ -57,9 +57,8 @@ SYSTEM_PROMPT = """너는 PowderGuide의 전용 캐릭터 "파우디(Powdi)"야.
 ────────────────────────────────────────────────────────
 【최종 타입 규칙】
 ────────────────────────────────────────────────────────
-최종 타입 = 위 12 Archetype 중 하나 + (스키어/보더)
-총 24가지 중 하나만 선택해야 한다.
-임의의 타입을 만들지 않는다.
+최종 타입 = 12 Archetype 중 하나 + (스키어/보더)
+총 24개 조합 중 하나만 선택해야 한다.
 
 ────────────────────────────────────────────────────────
 【사용자 카드 출력 형식】
@@ -94,27 +93,30 @@ SYSTEM_PROMPT = """너는 PowderGuide의 전용 캐릭터 "파우디(Powdi)"야.
 ────────────────────────────────────────────────────────
 【주의】
 ────────────────────────────────────────────────────────
-- 위 형식은 절대 바꾸지 않는다.
+- 카드 형식은 절대 변경하지 않는다.
 - 카드를 출력한 뒤에는 추가 메시지를 보내지 않는다.
-- 절대 추론 과정을 드러내지 않는다.
+- 추론 과정은 절대 노출하지 않는다.
 
-이제 너는 파우디로서 자연스럽게 질문을 시작한다.
+이제 너는 파우디로서 첫 질문을 시작한다.
 """
 
+
 # ============================================
-# 2) Google Sheets 연결
+# 2) Google Sheets 연결 (Drive API 사용 X)
 # ============================================
-def connect_gsheet(sheet_name):
+SHEET_ID = "1MZQaCE8ez2dSYEMo35N2JLreQWjV5bjfof1KvsTZafE"
+
+def connect_gsheet():
     info = json.loads(st.secrets["GCP_SERVICE_ACCOUNT"])
 
     scopes = [
-        "https://www.googleapis.com/auth/spreadsheets",
-        "https://www.googleapis.com/auth/drive"
+        "https://www.googleapis.com/auth/spreadsheets"
     ]
 
     creds = Credentials.from_service_account_info(info, scopes=scopes)
     gc = gspread.authorize(creds)
-    sh = gc.open(sheet_name)
+
+    sh = gc.open_by_key(SHEET_ID)
     return sh
 
 
@@ -122,14 +124,14 @@ def connect_gsheet(sheet_name):
 # 3) Google Sheet 저장 (3개 필드만)
 # ============================================
 def save_user_card_to_sheet(user_name, final_type, card_text):
-    sh = connect_gsheet("PowderGuide")
+    sh = connect_gsheet()
     ws = sh.sheet1
 
     # 찰떡궁합 파트너 추출
-    lines = card_text.splitlines()
     partners = []
     record = False
-    for line in lines:
+
+    for line in card_text.splitlines():
         if "찰떡궁합 파트너" in line:
             record = True
             continue
@@ -138,18 +140,18 @@ def save_user_card_to_sheet(user_name, final_type, card_text):
                 break
             partners.append(line.strip())
 
-    best_match = ", ".join(partners)
+    best_match = partners[0] if partners else ""
 
     ws.append_row([user_name, final_type, best_match])
 
 
 # ============================================
-# 4) Stability AI 이미지 생성
+# 4) Stability AI 타로카드 이미지 생성
 # ============================================
 def generate_tarot_image(final_type):
     key = st.secrets["STABILITY_API_KEY"]
 
-    prompt = f"Tarot card style illustration of a {final_type} skiing or snowboarding, mystical lighting, elegant border, highly detailed, fantasy art"
+    prompt = f"Tarot card style illustration of a {final_type} skiing or snowboarding, mystical atmosphere, ornate golden border, fantasy lighting, premium art style"
 
     url = "https://api.stability.ai/v2beta/stable-image/generate/core"
 
@@ -174,16 +176,19 @@ def generate_tarot_image(final_type):
 
 
 # ============================================
-# 5) GPT Client
+# 5) GPT 클라이언트
 # ============================================
 client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 
+
+# ============================================
+# 6) Streamlit UI 구성
+# ============================================
 st.title("⛷️ 파우디 챗봇")
 st.write("스키/보드 성향을 분석해 사용자 타로카드를 생성해줘요!")
 
-# ============================================
-# 6) 세션 상태
-# ============================================
+
+# 세션 상태 초기화
 if "messages" not in st.session_state:
     st.session_state.messages = [{"role": "system", "content": SYSTEM_PROMPT}]
 
@@ -211,14 +216,19 @@ if st.session_state.user_name is None:
 # 8) Powdi 첫 인사
 # ============================================
 if st.session_state.user_name and not st.session_state.first_greeted:
-    first_msg = f"안녕 {st.session_state.user_name}! 나는 파우디야⛷️ 오늘 너의 스키/보드 성향을 알아보고 멋진 카드를 만들어줄게! 먼저, 너는 스키어야? 보더야?"
+    first_msg = (
+        f"안녕 {st.session_state.user_name}! 나는 파우디야⛷️❄️ "
+        "너의 스키/보드 성향을 알아보고 멋진 카드를 만들어줄게! "
+        "먼저, 너는 스키어야? 보더야?"
+    )
+
     st.chat_message("assistant").write(first_msg)
     st.session_state.messages.append({"role": "assistant", "content": first_msg})
     st.session_state.first_greeted = True
 
 
 # ============================================
-# 9) 사용자 입력
+# 9) 대화 처리
 # ============================================
 if st.session_state.first_greeted and not st.session_state.card_done:
     user_input = st.chat_input("파우디에게 말해보세요!")
@@ -227,7 +237,7 @@ if st.session_state.first_greeted and not st.session_state.card_done:
         st.chat_message("user").write(user_input)
         st.session_state.messages.append({"role": "user", "content": user_input})
 
-        # GPT 호출
+        # GPT 응답
         response = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=st.session_state.messages
@@ -235,18 +245,17 @@ if st.session_state.first_greeted and not st.session_state.card_done:
 
         reply = response.choices[0].message.content
         st.chat_message("assistant").write(reply)
-
         st.session_state.messages.append({"role": "assistant", "content": reply})
 
-        # 카드 생성 여부 확인
+        # 카드 생성 감지
         if "🎴 **PowderGuide 사용자 카드**" in reply:
             st.session_state.card_done = True
 
             # 타입 추출
             m = re.search(r"\[\s*(.*?)\s*\]", reply)
-            final_type = m.group(1) if m else "Unknown Type"
+            final_type = m.group(1) if m else "Unknown"
 
-            # 시트 저장
+            # Google Sheets 저장
             save_user_card_to_sheet(
                 user_name=st.session_state.user_name,
                 final_type=final_type,
@@ -255,7 +264,7 @@ if st.session_state.first_greeted and not st.session_state.card_done:
 
             st.success("Google Sheets 저장 완료!")
 
-            # Stability 이미지 생성
-            img_bytes = generate_tarot_image(final_type)
-            if img_bytes:
-                st.image(img_bytes, caption=f"{final_type} 타로 카드", use_column_width=True)
+            # 이미지 생성
+            img = generate_tarot_image(final_type)
+            if img:
+                st.image(img, caption=f"{final_type} 타로 카드", width=450)

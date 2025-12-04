@@ -154,6 +154,22 @@ SYSTEM_PROMPT = """
 {fortune_message}
 ============================
 """
+# ------------------------
+# 세션 변수 보장 초기화
+# ------------------------
+if "messages" not in st.session_state:
+    st.session_state.messages = [
+        {"role": "system", "content": SYSTEM_PROMPT}
+    ]
+
+if "first_greeted" not in st.session_state:
+    st.session_state.first_greeted = False
+
+if "card_done" not in st.session_state:
+    st.session_state.card_done = False
+
+if "user_name" not in st.session_state:
+    st.session_state.user_name = ""
 
 # ----------------------------------------------------
 # 6) Streamlit UI

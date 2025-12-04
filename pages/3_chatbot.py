@@ -178,10 +178,12 @@ for m in st.session_state.messages:
 # ----------------------------------------------------
 # 7) 사용자 입력 → Powdi 답변
 # ----------------------------------------------------
-if not st.session_state.card_done:
-    user_input = st.chat_input("파우디에게 말해보세요!")
+if not st.session_state.card_done and st.session_state.first_greeted:
+
+    user_input = st.chat_input("파우디에게 답해주세요!")
 
     if user_input:
+        # 사용자 메시지 저장
         st.session_state.messages.append({"role": "user", "content": user_input})
         with st.chat_message("user"):
             st.markdown(user_input)
@@ -193,31 +195,30 @@ if not st.session_state.card_done:
         )
         reply = response.choices[0].message.content
 
-
+        # Powdi 응답 저장
         st.session_state.messages.append({"role": "assistant", "content": reply})
         with st.chat_message("assistant"):
             st.markdown(reply)
 
         # ----------------------------------------------------
-        # 8) 카드 생성 감지
+        # 8) 사용자 카드 생성 감지
         # ----------------------------------------------------
         if "PowderGuide 사용자 카드" in reply:
             st.session_state.card_done = True
 
-            # 타입 추출
+            # 최종 타입 추출
             m = re.search(r"\[\s*(.*?)\s*\]", reply)
-            final_type = m.group(1)
+            final_type = m.group(1) if m else "타입 미확인"
 
             st.success(f"최종 타입: {final_type}")
 
-            # Google Sheets 저장
+            # Google Sheet 저장
             save_user_card_to_sheet(
-                user_name=user_name or "익명",
+                user_name=st.session_state.user_name or "익명",
                 final_type=final_type,
                 card_text=reply,
                 conversation=st.session_state.messages,
             )
-
             st.info("Google Sheet 저장 완료!")
 
             # Stability AI로 이미지 생성

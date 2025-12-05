@@ -12,7 +12,7 @@ st.markdown("""
     ❄️ PowderGuide AI
 </h1>
 <p style='text-align:center; font-size:18px; color:gray; margin-top:-10px;'>
-    스키장 실시간 검색 · 렌탈 · 숙소 · AI 챗봇
+    스키장 실시간 검색 · AI 챗봇 · AI 스타일
 </p>
 """, unsafe_allow_html=True)
 
@@ -28,16 +28,12 @@ with col1:
     if st.button("🔍 스키장 검색", use_container_width=True):
         st.switch_page("pages/1_search.py")
 
-with col2:
-    if st.button("🎿 렌탈 정보", use_container_width=True):
-        st.switch_page("pages/2_rental.py")
-
 with col3:
-    if st.button("🏨 숙소 정보", use_container_width=True):
-        st.switch_page("pages/3_lodging.py")
+    if st.button("🤖 파우디 챗봇", use_container_width=True):
+        st.switch_page("pages/3_chatbot.py")
 
 with col4:
-    if st.button("🤖 AI 챗봇", use_container_width=True):
-        st.switch_page("pages/4_chatbot.py")
+    if st.button("🤖 파우디 스타일러", use_container_width=True):
+        st.switch_page("pages/4_style.py")
 
 

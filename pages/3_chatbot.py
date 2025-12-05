@@ -81,6 +81,7 @@ def save_user_card_to_sheet(name, final_type):
 def generate_tarot_image(final_type):
     key = st.secrets["STABILITY_API_KEY"]
 
+    # 스키/보드 구분
     is_skier = "스키어" in final_type
     type_name = final_type.replace("스키어", "").replace("보더", "").strip()
 
@@ -92,28 +93,39 @@ def generate_tarot_image(final_type):
 
     color = TYPE_COLOR_THEME.get(type_name, "arcade palette")
     stats = TYPE_STATS.get(type_name, {"speed": 70, "skill": 70, "balance": 70})
+
     spd, skl, bal = stats["speed"], stats["skill"], stats["balance"]
 
     prompt = (
-        f"retro 16-bit pixel art character card, {gear}, "
-        f"{color}, neon winter slope background, chibi proportions, "
+        f"retro 16-bit pixel art game character card, {gear}, "
+        f"{color}, neon winter slope background, cute chibi proportions, "
         f"pixel text '{final_type}', "
         f"pixel stats SPEED {spd}, SKILL {skl}, BALANCE {bal}, "
-        f"arcade collectible UI, dynamic action lines, high-detail shading"
+        f"high detail pixel shading, arcade UI"
     )
 
     url = "https://api.stability.ai/v2beta/stable-image/generate/core"
-    headers = {"Authorization": f"Bearer {key}", "Accept": "image/*"}
-    files = {"none": (None, "")}
-    data = {"prompt": prompt, "aspect_ratio": "3:4", "output_format": "png"}
 
-    resp = requests.post(url, headers=headers, files=files, data=data)
-    if resp.status_code != 200:
-        st.error("Stability 오류:")
-        st.write(resp.text)
+    headers = {
+        "Authorization": f"Bearer {key}",
+        "Accept": "image/*"
+    }
+
+    files = {
+        "prompt": (None, prompt),
+        "output_format": (None, "png"),
+        "aspect_ratio": (None, "3:4"),
+    }
+
+    response = requests.post(url, headers=headers, files=files)
+
+    if response.status_code != 200:
+        st.error("⚠️ Stability API 오류 발생")
+        st.code(response.text)
         return None
 
-    return resp.content
+    return response.content
+
 
 # ============================================
 # 5) OpenAI GPT
@@ -185,51 +197,9 @@ if st.session_state.greeted and st.session_state.final_type is None:
 if st.session_state.final_type:
     st.subheader(f"🎴 {st.session_state.final_type} — 너의 픽셀 캐릭터 카드!")
 
-    img = def generate_tarot_image(final_type):
-    key = st.secrets["STABILITY_API_KEY"]
+    img = generate_tarot_image(st.session_state.final_type)
 
-    # 스키/보드 구분
-    is_skier = "스키어" in final_type
-    type_name = final_type.replace("스키어", "").replace("보더", "").strip()
+    if img:
+        st.image(img, width=400)
 
-    gear = (
-        "pixel ski character, carving skis, goggles"
-        if is_skier else
-        "pixel snowboard character, freestyle trick, goggles"
-    )
-
-    color = TYPE_COLOR_THEME.get(type_name, "arcade palette")
-    stats = TYPE_STATS.get(type_name, {"speed": 70, "skill": 70, "balance": 70})
-
-    spd, skl, bal = stats["speed"], stats["skill"], stats["balance"]
-
-    prompt = (
-        f"retro 16-bit pixel art game character card, {gear}, "
-        f"{color}, neon winter slope background, cute chibi proportions, "
-        f"pixel text '{final_type}', "
-        f"pixel stats SPEED {spd}, SKILL {skl}, BALANCE {bal}, "
-        f"high detail pixel shading, arcade UI"
-    )
-
-    url = "https://api.stability.ai/v2beta/stable-image/generate/core"
-
-    headers = {
-        "Authorization": f"Bearer {key}",
-        "Accept": "image/*"
-    }
-
-    # Stability는 반드시 multipart/form-data 구조를 가져야 한다.
-    files = {
-        "prompt": (None, prompt),
-        "output_format": (None, "png"),
-        "aspect_ratio": (None, "3:4"),
-    }
-
-    response = requests.post(url, headers=headers, files=files)
-
-    if response.status_code != 200:
-        st.error("⚠️ Stability API 오류 발생")
-        st.code(response.text)
-        return None
-
-    return response.content
+    st.markdown("🔮 **파우디의 코멘트:** 오늘도 너만의 스타일로 신나게 달려보자! ❄️")

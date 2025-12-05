@@ -6,6 +6,37 @@ import re
 from google.oauth2.service_account import Credentials
 from openai import OpenAI
 
+TYPE_COLOR_THEME = {
+    "도전형": "fiery red and orange, bold energetic palette",
+    "화려한 기술형": "neon cyan and pink, flashy trickster palette",
+    "속도형": "high-contrast blue and silver, fast aura palette",
+    "장인형 카빙러": "deep navy and ice blue precision palette",
+    "파크형 트릭 메이커": "neon pink, teal, lime freestyle palette",
+    "파우더 탐험가": "soft pastel blue and white powder palette",
+    "안정형 팀 플레이어": "warm beige and yellow friendly palette",
+    "리듬형 카빙러": "smooth turquoise and wave-like gradient palette",
+    "사회성 버디": "bright orange and cheerful green palette",
+    "초보 리더형": "soft green beginner palette",
+    "백컨트리 탐험가": "earth brown and forest green palette",
+    "안전관리형": "clean steel gray and orange safety palette",
+}
+
+TYPE_STATS = {
+    "도전형": {"speed": 90, "skill": 80, "balance": 70},
+    "화려한 기술형": {"speed": 75, "skill": 95, "balance": 65},
+    "속도형": {"speed": 95, "skill": 75, "balance": 70},
+    "장인형 카빙러": {"speed": 85, "skill": 90, "balance": 80},
+    "파크형 트릭 메이커": {"speed": 80, "skill": 95, "balance": 60},
+    "파우더 탐험가": {"speed": 70, "skill": 85, "balance": 90},
+    "안정형 팀 플레이어": {"speed": 60, "skill": 70, "balance": 95},
+    "리듬형 카빙러": {"speed": 80, "skill": 85, "balance": 85},
+    "사회성 베디": {"speed": 65, "skill": 70, "balance": 80},
+    "초보 리더형": {"speed": 55, "skill": 60, "balance": 70},
+    "백컨트리 탐험가": {"speed": 75, "skill": 80, "balance": 85},
+    "안전관리형": {"speed": 50, "skill": 70, "balance": 95},
+}
+
+
 # ============================================
 # 1) SYSTEM PROMPT
 # ============================================
@@ -25,26 +56,6 @@ SYSTEM_PROMPT = """
 4. 최종 카드 생성 시 아래 형식을 반드시 사용해야 한다.
 
 ============================
-🎴 **PowderGuide 사용자 카드**
-**[{최종 타입}]**
-
-🌈 **상징 아이콘**
-{emoji}
-
-🎨 **컬러 테마**
-{color_theme}
-
-✨ **키워드 3가지**
-- {keyword1}
-- {keyword2}
-- {keyword3}
-
-🧭 **타입 설명**
-{type_description}
-
-🤝 **찰떡궁합 파트너**
-{best_match_1}
-
 🔮 **파우디의 작은 조언**
 {fortune_message}
 ============================
@@ -227,8 +238,9 @@ if st.session_state.first_greeted and not st.session_state.card_done:
         st.chat_message("assistant").write(reply)
         st.session_state.messages.append({"role": "assistant", "content": reply})
 
-        # 카드 생성 여부 확인
-        if "🎴 **PowderGuide 사용자 카드**" in reply:
+        # 타입 감지 규칙 변경
+            if re.search(r"\[.*?\]", reply):
+
             st.session_state.card_done = True
 
             m = re.search(r"\[\s*(.*?)\s*\]", reply)

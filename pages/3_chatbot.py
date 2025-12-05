@@ -135,7 +135,7 @@ client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 # ============================================
 # 6) Streamlit 상태 변수
 # ============================================
-st.title("⛷️ 파우디 챗봇 — 픽셀 캐릭터 카드 생성기")
+st.title("⛷️ 파우디 챗봇 ")
 
 if "messages" not in st.session_state:
     st.session_state.messages = [{"role": "system", "content": SYSTEM_PROMPT}]

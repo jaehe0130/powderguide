@@ -78,7 +78,7 @@ def save_user_card_to_sheet(name, final_type):
 # ============================================
 # 4) Stability 이미지 생성
 # ============================================
-def generate_tarot_image(final_type):
+def generate_pixel_card_image(final_type: str, partner: str) -> bytes:
     key = st.secrets["STABILITY_API_KEY"]
 
     # 스키/보드 구분
@@ -86,30 +86,41 @@ def generate_tarot_image(final_type):
     type_name = final_type.replace("스키어", "").replace("보더", "").strip()
 
     gear = (
-        "pixel ski character, carving skis, goggles"
+        "2D pixel ski character, holding carving skis, goggles, winter jacket"
         if is_skier else
-        "pixel snowboard character, freestyle trick, goggles"
+        "2D pixel snowboard character, doing small trick, goggles, winter jacket"
     )
 
-    color = TYPE_COLOR_THEME.get(type_name, "arcade palette")
+    # Type 기반 색감
+    color = TYPE_COLOR_THEME.get(type_name, "retro pastel blue and arcade pink palette")
     stats = TYPE_STATS.get(type_name, {"speed": 70, "skill": 70, "balance": 70})
-
     spd, skl, bal = stats["speed"], stats["skill"], stats["balance"]
 
-    prompt = (
-        f"retro 16-bit pixel art game character card, {gear}, "
-        f"{color}, neon winter slope background, cute chibi proportions, "
-        f"pixel text '{final_type}', "
-        f"pixel stats SPEED {spd}, SKILL {skl}, BALANCE {bal}, "
-        f"high detail pixel shading, arcade UI"
-    )
+    # 🧩 메이플스토리 도트 UI 스타일 핵심 프롬프트
+    prompt = f"""
+retro 2003-style pixel art RPG character status card,
+inspired by old MapleStory UI,
+wooden style rounded UI panel frame,
+thin black pixel outline,
+small pixel font labels,
+pastel UI buttons, HP/MP bar style decoration,
+full body {gear},
+{color},
+snow resort background,
+pixel text '{final_type}' at top center,
+pixel text 'PARTNER: {partner}' below,
+pixel stats SPEED:{spd}, SKILL:{skl}, BALANCE:{bal},
+clean center composition,
+3:4 vertical card,
+16-bit sprite shading,
+low resolution pixel density,
+game UI, charming, nostalgic, cozy,
+professional pixel artist quality
+"""
 
     url = "https://api.stability.ai/v2beta/stable-image/generate/core"
 
-    headers = {
-        "Authorization": f"Bearer {key}",
-        "Accept": "image/*"
-    }
+    headers = {"Authorization": f"Bearer {key}", "Accept": "image/*"}
 
     files = {
         "prompt": (None, prompt),
@@ -120,7 +131,7 @@ def generate_tarot_image(final_type):
     response = requests.post(url, headers=headers, files=files)
 
     if response.status_code != 200:
-        st.error("⚠️ Stability API 오류 발생")
+        st.error("⚠ Stability API 오류 발생")
         st.code(response.text)
         return None
 

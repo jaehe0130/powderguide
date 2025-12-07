@@ -93,7 +93,7 @@ with col2:
     """, unsafe_allow_html=True)
 
 with col3:
-    if st.button("🧥 파우디 스타일러", use_container_width=True):
+    if st.button("🧥 파우디 코디네이터", use_container_width=True):
         st.switch_page("pages/4_style.py")
     st.markdown("""
         <div class="card card-orange">

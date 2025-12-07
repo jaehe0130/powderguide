@@ -16,7 +16,7 @@ st.set_page_config(
     layout="centered",
 )
 
-st.title("⛷️파우디의 스타일러🏂")
+st.title("⛷️파우디 코디네이터🏂")
 st.markdown(
 """
 스키장 환경과 너의 취향을 반영해서 **스키복/보드복 스타일을 추천**하고,  

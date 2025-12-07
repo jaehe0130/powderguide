@@ -97,7 +97,7 @@ with col3:
         st.switch_page("pages/4_style.py")
     st.markdown("""
         <div class="card card-orange">
-            <div class="card-title">🧣 파우디 스타일러</div>
+            <div class="card-title">🧣 파우디 코디네이터</div>
             <div class="card-sub">AI 스키/보드 코디 추천</div>
         </div>
     """, unsafe_allow_html=True)

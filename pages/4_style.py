@@ -133,12 +133,19 @@ def build_image_prompt_from_text(style_text: str) -> str:
 # 5) HuggingFace Image Generation
 # ================================
 def generate_fashion_image_huggingface(style_text: str):
+
     prompt = build_image_prompt_from_text(style_text)
 
     response = requests.post(
-        "https://router.huggingface.co/models/stabilityai/sdxl-turbo",
+        "https://router.huggingface.co/hf-inference/models/stabilityai/sdxl-turbo",
         headers={"Authorization": f"Bearer {HF_TOKEN}"},
-        json={"inputs": prompt, "parameters": {"num_inference_steps": 25}}
+        json={
+            "inputs": prompt,
+            "parameters": {
+                "num_inference_steps": 25,
+                "guidance_scale": 3.5
+            }
+        }
     )
 
     if response.status_code != 200:

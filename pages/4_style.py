@@ -137,7 +137,7 @@ def generate_fashion_image_huggingface(style_text: str):
     prompt = build_image_prompt_from_text(style_text)
 
     response = requests.post(
-        "https://router.huggingface.co/hf-inference/models/stabilityai/sdxl-turbo",
+        "https://router.huggingface.co/hf-inference/models/black-forest-labs/FLUX.1-dev",
         headers={"Authorization": f"Bearer {HF_TOKEN}"},
         json={
             "inputs": prompt,

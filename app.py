@@ -53,18 +53,6 @@ body {
     margin-top: 5px;
     opacity: 0.9;
 }
-</style>
-
-<!-- Snowflake elements -->
-<div class="snowflake">❄</div>
-<div class="snowflake">❄</div>
-<div class="snowflake">❄</div>
-<div class="snowflake">❄</div>
-<div class="snowflake">❄</div>
-<div class="snowflake">❄</div>
-<div class="snowflake">❄</div>
-<div class="snowflake">❄</div>
-""", unsafe_allow_html=True)
 
 # ---------------- HEADER ----------------
 st.markdown("""

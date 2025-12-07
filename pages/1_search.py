@@ -1,160 +1,117 @@
 # -*- coding: utf-8 -*-
 import streamlit as st
-import pandas as pd
 import requests
-import datetime
+import pandas as pd
 
+# ----------------------------------------
+# Config
+# ----------------------------------------
 st.set_page_config(page_title="스키장 검색", page_icon="🎿", layout="wide")
 
+OPENWEATHER_KEY = st.secrets["OPENWEATHER_API_KEY"]
+GOOGLE_MAPS_KEY = st.secrets["GOOGLE_MAPS_API_KEY"]
+
+
+# ----------------------------------------
+# Ski Resort Database
+# (사진 / URL / 위도 / 경도 포함)
+# ----------------------------------------
+ski_resorts = [
+    {"name": "휘닉스 평창", "lat": 37.5795, "lon": 128.3257,
+     "url": "https://phoenixhnr.co.kr", "image": "https://phoenixhnr.co.kr/images/sub/ski.jpg"},
+
+    {"name": "비발디파크", "lat": 37.6512, "lon": 127.6841,
+     "url": "https://www.sonohotelsresorts.com/vp", "image": "https://image.goodchoice.kr/resize_1000X500/affiliate/2020/11/03/5fa12c0b2b3fa.jpg"},
+
+    {"name": "엘리시안 강촌", "lat": 37.8162, "lon": 127.6365,
+     "url": "https://www.elysian.co.kr", "image": "https://www.elysian.co.kr/common/images/ski/main_ski01.jpg"},
+
+    {"name": "하이원 리조트", "lat": 37.2189, "lon": 128.8404,
+     "url": "https://www.high1.com", "image": "https://image.goodchoice.kr/resize_1000X500/affiliate/2020/01/30/5e322a27c63a6.jpg"},
+
+    {"name": "용평 리조트", "lat": 37.6450, "lon": 128.6811,
+     "url": "https://www.yongpyong.co.kr", "image": "https://www.yongpyong.co.kr/images/main/slide_01.jpg"},
+
+    {"name": "곤지암 리조트", "lat": 37.3524, "lon": 127.3345,
+     "url": "https://www.konjiamresort.co.kr", "image": "https://cdn.visitkorea.or.kr/img/call?cmd=VIEW&id=6c5b2b30-1f0e-4c58-81c7-050f27824f66"},
+
+    {"name": "오크밸리", "lat": 37.4488, "lon": 127.8238,
+     "url": "https://www.oakvalley.co.kr", "image": "https://www.oakvalley.co.kr/images/sub/ski/ski_01.jpg"},
+
+    {"name": "웰리힐리파크", "lat": 37.4883, "lon": 128.2422,
+     "url": "https://www.wellihillipark.com", "image": "https://cdn.visitkorea.or.kr/img/call?cmd=VIEW&id=d5b97ca2-f778-4dd9-ad07-291e886a193f"},
+]
+
+
+# ----------------------------------------
+# Weather API
+# ----------------------------------------
+def get_weather(lat, lon):
+    url = f"https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={OPENWEATHER_KEY}&units=metric&lang=kr"
+    
+    res = requests.get(url)
+    if res.status_code != 200:
+        return None
+
+    data = res.json()
+    return {
+        "temp": data["main"]["temp"],
+        "feels": data["main"]["feels_like"],
+        "desc": data["weather"][0]["description"]
+    }
+
+
+# ----------------------------------------
+# Google Static Map
+# ----------------------------------------
+def get_static_map(lat, lon):
+    return f"https://maps.googleapis.com/maps/api/staticmap?center={lat},{lon}&zoom=13&size=400x300&maptype=roadmap&markers={lat},{lon}&key={GOOGLE_MAPS_KEY}"
+
+
+# ----------------------------------------
+# PAGE UI
+# ----------------------------------------
 st.markdown("""
 <h1 style='text-align:center;'>🎿 스키장 검색</h1>
 <p style='text-align:center; color:gray;'>
-원하는 조건으로 스키장을 찾아보세요!
+원하는 스키장을 선택해 날씨와 위치를 확인하세요!
 </p>
 """, unsafe_allow_html=True)
 
-# =============== API KEYS =================
-GOOGLE_KEY = st.secrets["GOOGLE_MAPS_API_KEY"]
-WEATHER_KEY = st.secrets["WEATHER_API_KEY"]
-
-
-# =============== 스키장 데이터 ===============
-ski_resorts = [
-    {
-        "name": "휘닉스 평창",
-        "region": "강원도",
-        "lat": 37.6454,
-        "lon": 128.6811,
-        "beginner": 40, "intermediate": 40, "advanced": 20,
-        "night": True, "price": 89000, "open_rate": 75,
-        "image": "https://phoenixhnr.co.kr/images/sub/ski.jpg"
-    },
-    {
-        "name": "비발디파크",
-        "region": "강원도",
-        "lat": 37.6424,
-        "lon": 127.6822,
-        "beginner": 50, "intermediate": 35, "advanced": 15,
-        "night": True, "price": 95000, "open_rate": 80,
-        "image": "https://image.goodchoice.kr/resize_1000X500/affiliate/2020/11/03/5fa12c0b2b3fa.jpg"
-    },
-    {
-        "name": "엘리시안 강촌",
-        "region": "강원도",
-        "lat": 37.8163,
-        "lon": 127.6365,
-        "beginner": 60, "intermediate": 30, "advanced": 10,
-        "night": True, "price": 79000, "open_rate": 70,
-        "image": "https://www.elysian.co.kr/common/images/ski/main_ski01.jpg"
-    },
-    {
-        "name": "하이원 리조트",
-        "region": "강원도",
-        "lat": 37.2086,
-        "lon": 128.8263,
-        "beginner": 30, "intermediate": 40, "advanced": 30,
-        "night": False, "price": 110000, "open_rate": 85,
-        "image": "https://image.goodchoice.kr/resize_1000X500/affiliate/2020/01/30/5e322a27c63a6.jpg"
-    },
-    {
-        "name": "용평 리조트",
-        "region": "강원도",
-        "lat": 37.6453,
-        "lon": 128.6810,
-        "beginner": 25, "intermediate": 45, "advanced": 30,
-        "night": True, "price": 105000, "open_rate": 85,
-        "image": "https://www.yongpyong.co.kr/images/main/slide_01.jpg"
-    },
-]
-
+st.markdown("---")
 df = pd.DataFrame(ski_resorts)
 
-# ================= 필터 ====================
-st.subheader("🔍 검색 및 필터")
+# 검색
+keyword = st.text_input("스키장 이름 검색", "")
 
-col1, col2, col3, col4 = st.columns([2,1,1,1])
+if keyword:
+    df = df[df["name"].str.contains(keyword)]
 
-with col1: keyword = st.text_input("스키장 이름 검색", "")
-with col2: region_filter = st.selectbox("지역 선택", ["전체", "강원도", "경기도"])
-with col3: night_filter = st.selectbox("야간 가능 여부", ["전체", "야간 가능", "야간 불가"])
-with col4: price_filter = st.slider("가격대(최대)", 50000, 120000, 120000)
+# 출력
+for resort in df.to_dict(orient="records"):
 
-filtered = df.copy()
+    col1, col2, col3 = st.columns([2, 2, 2])
+    st.markdown("---")
 
-if keyword: filtered = filtered[filtered["name"].str.contains(keyword)]
-if region_filter != "전체": filtered = filtered[filtered["region"] == region_filter]
-if night_filter == "야간 가능": filtered = filtered[filtered["night"] == True]
-elif night_filter == "야간 불가": filtered = filtered[filtered["night"] == False]
-filtered = filtered[filtered["price"] <= price_filter]
+    with col1:
+        st.image(resort["image"], caption=resort["name"], use_column_width=True)
 
-# =============== 함수: 날씨 요청 ===============
-def get_weather(lat, lon):
-    now = datetime.datetime.now()
-    base_date = now.strftime("%Y%m%d")
-    base_time = (now - datetime.timedelta(hours=1)).strftime("%H00")  # 예보는 한시간전
+    with col2:
+        weather = get_weather(resort["lat"], resort["lon"])
+        st.subheader("🌤️ 날씨 정보")
+        
+        if weather:
+            st.write(f"온도: **{weather['temp']}℃**")
+            st.write(f"체감: **{weather['feels']}℃**")
+            st.write(f"상태: **{weather['desc']}**")
+        else:
+            st.write("날씨 정보를 가져올 수 없음 ❌")
 
-    # nx, ny 변환 생략 → 강원도 기준 값 (정확도 높이려면 변환 함수 추가해야함)
-    url = (
-        "http://apis.data.go.kr/1360000/VilageFcstInfoService_2.0/getUltraSrtNcst"
-        f"?serviceKey={WEATHER_KEY}&numOfRows=10&pageNo=1&dataType=JSON"
-        f"&base_date={base_date}&base_time={base_time}&nx=73&ny=134"
-    )
+        st.markdown(f"🔗 [스키장 공식 홈페이지]({resort['url']})")
 
-    response = requests.get(url)
-    try:
-        data = response.json()["response"]["body"]["items"]["item"]
-        result = {item["category"]: item["obsrValue"] for item in data}
-        return {
-            "temp": result.get("T1H", "?"),
-            "humidity": result.get("REH", "?"),
-            "rain": result.get("RN1", "?"),
-        }
-    except:
-        return None
+    with col3:
+        st.subheader("🗺 위치")
+        map_url = get_static_map(resort["lat"], resort["lon"])
+        st.image(map_url, use_column_width=True)
 
-
-# ================= 출력 =====================
 st.markdown("---")
-st.subheader(f"🎿 검색 결과: {len(filtered)}곳")
-
-if len(filtered) == 0:
-    st.info("조건에 맞는 스키장이 없습니다!")
-else:
-
-    for i, row in filtered.iterrows():
-        with st.container():
-            cols = st.columns([1, 2])
-            
-            with cols[0]:
-                st.image(row["image"], use_column_width=True)
-
-            with cols[1]:
-                st.markdown(f"### **{row['name']}** ({row['region']})")
-                st.markdown(
-                    f"""
-                    - 🟢 초급 {row['beginner']}%
-                    - 🟡 중급 {row['intermediate']}%
-                    - 🔴 상급 {row['advanced']}%
-                    - 🌙 야간: {"가능" if row['night'] else "불가"}
-                    - 💰 가격: **{row['price']:,}원**
-                    - 🗻 오픈률: **{row['open_rate']}%**
-                    """
-                )
-
-                # 🌤 실시간 날씨
-                weather = get_weather(row["lat"], row["lon"])
-                if weather:
-                    st.write(f"🌡 **온도:** {weather['temp']}°C")
-                    st.write(f"💧 **습도:** {weather['humidity']}%")
-                    st.write(f"☔ **강수량:** {weather['rain']}mm")
-
-                # 지도 표시
-                map_url = f"""
-                <iframe width="100%" height="280" 
-                src="https://www.google.com/maps/embed/v1/place?key={GOOGLE_KEY}&q={row['lat']},{row['lon']}" 
-                loading="lazy"></iframe>
-                """
-                st.markdown(map_url, unsafe_allow_html=True)
-
-        st.markdown("---")
-

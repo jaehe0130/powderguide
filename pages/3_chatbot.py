@@ -107,51 +107,49 @@ def get_partner_type(final_type: str) -> str:
 # ============================================
 # 5) Stability Pixel Card
 # ============================================
-def generate_pixel_card_image(final_type: str, partner: str) -> bytes:
+def generate_pixel_card_image(final_type: str, partner: str, gender: str, ski_type: str) -> bytes:
     key = st.secrets["STABILITY_API_KEY"]
 
-    is_skier = "스키어" in final_type
+    gender_prompt = "female" if "여" in gender.lower() else "male"
+
+    if "스키" in ski_type:
+        equipment = "full body pixel art ski character, holding skis"
+    else:
+        equipment = "full body pixel art snowboarder character, holding snowboard mid-stance"
+
     type_name = final_type.replace("스키어", "").replace("보더", "").strip()
-
-    gear = (
-        "2D pixel ski character, holding carving skis, goggles, winter jacket"
-        if is_skier else
-        "2D pixel snowboard character, doing small trick, goggles, winter jacket"
-    )
-
-    color = TYPE_COLOR_THEME.get(type_name, "retro pastel blue and arcade pink palette")
+    color = TYPE_COLOR_THEME.get(type_name, "retro blue and pink palette")
     stats = TYPE_STATS.get(type_name, {"speed": 70, "skill": 70, "balance": 70})
     spd, skl, bal = stats["speed"], stats["skill"], stats["balance"]
 
     prompt = f"""
-retro 2003-style pixel art RPG character status card,
-inspired by old MapleStory UI,
-wooden style rounded UI panel frame,
-thin black pixel outline,
-small pixel font labels,
-pastel UI buttons, HP/MP bar decoration,
-full body {gear},
+high resin pixel art, retro RPG character status card,
+MapleStory 2003 UI style,
+wooden pixel rounded frame,
+little pixel icon HUD,
+{gender_prompt}, {equipment},
+wearing winter outfit,
 {color},
-snow resort background,
-pixel text '{final_type}' at top center,
-pixel text 'PARTNER: {partner}' below,
-pixel stats SPEED:{spd}, SKILL:{skl}, BALANCE:{bal},
-clean center composition,
-4:5 card ratio,
-16-bit sprite shading,
-low resolution pixel density,
-game UI, nostalgic and cozy,
-professional pixel art quality
+snowy town background,
+pixel art text label at top '{final_type}',
+small pixel font section bottom left:
+'SPEED: {spd}',
+'SKILL: {skl}',
+'BALANCE: {bal}',
+separate bottom right pixel box 'PARTNER: {partner}',
+HP/MP bar style UI meter decoration,
+clean symmetrical game menu layout,
+centered composition,
+16-bit pixel shading, nostalgic cozy feeling,
+professional pixel illustration
 """
 
     url = "https://api.stability.ai/v2beta/stable-image/generate/core"
-
     headers = {"Authorization": f"Bearer {key}", "Accept": "image/*"}
-
     files = {
         "prompt": (None, prompt),
         "output_format": (None, "png"),
-        "aspect_ratio": (None, "4:5"),  # 🔥 변경된 라인
+        "aspect_ratio": (None, "4:5")
     }
 
     response = requests.post(url, headers=headers, files=files)

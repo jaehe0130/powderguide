@@ -8,7 +8,7 @@ import pandas as pd
 # ----------------------------------------
 st.set_page_config(page_title="스키장 검색", page_icon="🎿", layout="wide")
 
-OPENWEATHER_KEY = st.secrets["OPENWEATHER_API_KEY"]
+OPEN_WEATHER_KEY = st.secrets["OPEN_WEATHER_API_KEY"]
 GOOGLE_MAPS_KEY = st.secrets["GOOGLE_MAPS_API_KEY"]
 
 

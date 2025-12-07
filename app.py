@@ -16,31 +16,39 @@ body {
     overflow-x:hidden;
 }
 
-/* ❄ Snow Animation */
+st.markdown("""
+<style>
+.snow-container {
+  pointer-events:none;
+}
 .snowflake {
   position: fixed;
   top: -10px;
   color: white;
-  font-size: 18px;
+  font-size: 20px;
+  user-select:none;
   animation-name: snowfall;
   animation-timing-function: linear;
   animation-iteration-count: infinite;
+  z-index: 999;
 }
 
 @keyframes snowfall {
-  0% { transform: translateY(0px) rotate(0deg);}
+  0% { transform: translateY(-5px) rotate(0deg);}
   100% { transform: translateY(900px) rotate(360deg);}
 }
 
-/* Random snow positions */
-.snowflake:nth-child(1) { left: 5%; animation-duration: 6s; animation-delay: 0s;}
-.snowflake:nth-child(2) { left: 15%; animation-duration: 8s; animation-delay: 1s;}
+/* 랜덤 위치와 속도 */
+.snowflake:nth-child(1) { left: 5%; animation-duration: 8s; animation-delay: 0s;}
+.snowflake:nth-child(2) { left: 15%; animation-duration: 6s; animation-delay: 1s;}
 .snowflake:nth-child(3) { left: 30%; animation-duration: 7s; animation-delay: 2s;}
-.snowflake:nth-child(4) { left: 45%; animation-duration: 5s; animation-delay: 1s;}
-.snowflake:nth-child(5) { left: 55%; animation-duration: 9s; animation-delay: 0s;}
-.snowflake:nth-child(6) { left: 70%; animation-duration: 7s; animation-delay: 2s;}
-.snowflake:nth-child(7) { left: 85%; animation-duration: 6s; animation-delay: 1s;}
-.snowflake:nth-child(8) { left: 95%; animation-duration: 10s; animation-delay: 0.5s;}
+.snowflake:nth-child(4) { left: 45%; animation-duration: 9s; animation-delay: 0s;}
+.snowflake:nth-child(5) { left: 55%; animation-duration: 8s; animation-delay: 1.5s;}
+.snowflake:nth-child(6) { left: 70%; animation-duration: 7s; animation-delay: .5s;}
+.snowflake:nth-child(7) { left: 85%; animation-duration: 10s; animation-delay: 1s;}
+.snowflake:nth-child(8) { left: 95%; animation-duration: 9s; animation-delay: 0s;}
+</style>
+""", unsafe_allow_html=True)
 
 /* CARD Styles */
 .card {

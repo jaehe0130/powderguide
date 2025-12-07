@@ -6,32 +6,30 @@ st.set_page_config(
     page_icon="❄️"
 )
 
-# ---------------- CSS (Snow Animation + Card UI) ----------------
+# ---------------- CSS (Shadow + Card) ----------------
 st.markdown("""
 <style>
 
 body {
     background: linear-gradient(135deg, #eef7ff, #ffffff);
     font-family: 'Arial', sans-serif;
-    overflow-x:hidden;
 }
 
-
-/* CARD Styles */
+/* 카드 기본 스타일 */
 .card {
     border-radius: 18px;
     color: white;
     padding: 45px 15px;
     text-align: center;
-    box-shadow: 0px 12px 28px rgba(0,0,0,0.30);   /* <-- 강한 그림자 */
-    transition: transform 0.25s ease, box-shadow 0.25s ease;
+    box-shadow: 0px 12px 28px rgba(0,0,0,0.30);  /* 더 강한 그림자 */
+    transition: transform .25s ease, box-shadow .25s ease;
 }
-
 .card:hover {
     transform: translateY(-10px) scale(1.02);
-    box-shadow: 0px 18px 40px rgba(0,0,0,0.45);   /* <-- hover 더 깊음 */
+    box-shadow: 0px 18px 40px rgba(0,0,0,0.45); /* hover 더 깊고 진함 */
 }
 
+/* 카드별 색상 */
 .card-blue {
     background: linear-gradient(135deg, #4dabf7, #228be6);
 }
@@ -42,19 +40,23 @@ body {
     background: linear-gradient(135deg, #ffc078, #fa8e28);
 }
 
+/* 제목 및 서브 */
 .card-title {
     font-size: 26px;
     font-weight: bold;
     margin-bottom: 5px;
 }
-
 .card-sub {
     font-size: 16px;
     margin-top: 5px;
     opacity: 0.9;
 }
 
-# ---------------- HEADER ----------------
+</style>
+""", unsafe_allow_html=True)
+
+
+# ---------------- Header ----------------
 st.markdown("""
 <div style="text-align:center; padding-top:5px;">
     <h1 style='font-size:55px;'>❄ PowderGuide AI</h1>
@@ -65,8 +67,9 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.write("<hr>", unsafe_allow_html=True)
+st.write("")
 
-# ---------------- MENU CARDS ----------------
+# ---------------- 3 메뉴 카드 ----------------
 col1, col2, col3 = st.columns(3, gap="large")
 
 with col1:

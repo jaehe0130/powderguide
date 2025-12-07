@@ -136,7 +136,7 @@ def generate_fashion_image_huggingface(style_text: str):
     prompt = build_image_prompt_from_text(style_text)
 
     response = requests.post(
-        "https://api-inference.huggingface.co/models/stabilityai/sdxl-turbo",
+        "https://router.huggingface.co/models/stabilityai/sdxl-turbo",
         headers={"Authorization": f"Bearer {HF_TOKEN}"},
         json={"inputs": prompt, "parameters": {"num_inference_steps": 25}}
     )
@@ -145,6 +145,7 @@ def generate_fashion_image_huggingface(style_text: str):
         raise RuntimeError(f"HF API Error: {response.text}")
 
     return Image.open(BytesIO(response.content))
+
 
 
 # ================================

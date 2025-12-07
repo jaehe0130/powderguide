@@ -26,7 +26,7 @@ SYSTEM_PROMPT = """
 """
 
 # ============================================
-# 2) 타입 테마 & 능력치 (전역 변수)
+# 2) Type Theme & Stats
 # ============================================
 TYPE_COLOR_THEME = {
     "도전형": "fiery red and orange palette",
@@ -59,7 +59,7 @@ TYPE_STATS = {
 }
 
 # ============================================
-# 3) Google Sheet 저장
+# 3) Google Sheets 저장
 # ============================================
 SHEET_ID = "1MZQaCE8ez2dSYEMo35N2JLreQWjV5bjfof1KvsTZafE"
 
@@ -70,18 +70,46 @@ def connect_gsheet():
     gc = gspread.authorize(creds)
     return gc.open_by_key(SHEET_ID)
 
-def save_user_card_to_sheet(name, final_type):
+def save_user_card_to_sheet(name, final_type, partner):
     sh = connect_gsheet()
     ws = sh.sheet1
-    ws.append_row([name, final_type])
+    ws.append_row([name, final_type, partner])
+
 
 # ============================================
-# 4) Stability 이미지 생성
+# 4) 추천 동반자 자동 생성 (TYPE 제한)
+# ============================================
+def get_partner_type(final_type: str) -> str:
+    possible_types = list(TYPE_COLOR_THEME.keys())
+    possible_types_str = ", ".join(possible_types)
+
+    prompt = f"""
+너는 PowderGuide 스키/보드 성향 매칭 전문가야.
+
+아래 목록 중에서 "{final_type}" 와 가장 궁합이 좋은 타입 하나를 선택해.
+선택 가능한 타입 목록:
+[{possible_types_str}]
+
+규칙:
+- 목록 안에서만 선택
+- 새로운 이름 생성 금지
+- 설명 금지
+- 출력은 타입 이름만
+"""
+
+    resp = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.1,
+    )
+    return resp.choices[0].message.content.strip()
+
+# ============================================
+# 5) Stability Pixel Card
 # ============================================
 def generate_pixel_card_image(final_type: str, partner: str) -> bytes:
     key = st.secrets["STABILITY_API_KEY"]
 
-    # 스키/보드 구분
     is_skier = "스키어" in final_type
     type_name = final_type.replace("스키어", "").replace("보더", "").strip()
 
@@ -91,19 +119,17 @@ def generate_pixel_card_image(final_type: str, partner: str) -> bytes:
         "2D pixel snowboard character, doing small trick, goggles, winter jacket"
     )
 
-    # Type 기반 색감
     color = TYPE_COLOR_THEME.get(type_name, "retro pastel blue and arcade pink palette")
     stats = TYPE_STATS.get(type_name, {"speed": 70, "skill": 70, "balance": 70})
     spd, skl, bal = stats["speed"], stats["skill"], stats["balance"]
 
-    # 🧩 메이플스토리 도트 UI 스타일 핵심 프롬프트
     prompt = f"""
 retro 2003-style pixel art RPG character status card,
 inspired by old MapleStory UI,
 wooden style rounded UI panel frame,
 thin black pixel outline,
 small pixel font labels,
-pastel UI buttons, HP/MP bar style decoration,
+pastel UI buttons, HP/MP bar decoration,
 full body {gear},
 {color},
 snow resort background,
@@ -114,8 +140,8 @@ clean center composition,
 3:4 vertical card,
 16-bit sprite shading,
 low resolution pixel density,
-game UI, charming, nostalgic, cozy,
-professional pixel artist quality
+game UI, nostalgic and cozy,
+professional pixel art quality
 """
 
     url = "https://api.stability.ai/v2beta/stable-image/generate/core"
@@ -139,14 +165,14 @@ professional pixel artist quality
 
 
 # ============================================
-# 5) OpenAI GPT
+# 6) OpenAI GPT
 # ============================================
 client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 
 # ============================================
-# 6) Streamlit 상태 변수
+# 7) 상태 변수
 # ============================================
-st.title("⛷️ 파우디 챗봇 ")
+st.title("⛷️ 파우디 챗봇 ❄️")
 
 if "messages" not in st.session_state:
     st.session_state.messages = [{"role": "system", "content": SYSTEM_PROMPT}]
@@ -160,8 +186,12 @@ if "greeted" not in st.session_state:
 if "final_type" not in st.session_state:
     st.session_state.final_type = None
 
+if "partner" not in st.session_state:
+    st.session_state.partner = None
+
+
 # ============================================
-# 7) 이름 입력
+# 8) 이름 입력
 # ============================================
 if st.session_state.name is None:
     name = st.text_input("닉네임을 알려줘!")
@@ -170,7 +200,7 @@ if st.session_state.name is None:
         st.rerun()
 
 # ============================================
-# 8) 첫 인사
+# 9) 첫 인사
 # ============================================
 if st.session_state.name and not st.session_state.greeted:
     msg = f"안녕 {st.session_state.name}!⛷️❄️ 어떤 스타일인지 알아보고 픽셀카드로 만들어줄게! 스키어야? 보더야?"
@@ -179,7 +209,7 @@ if st.session_state.name and not st.session_state.greeted:
     st.session_state.greeted = True
 
 # ============================================
-# 9) 사용자 입력 처리
+# 10) 사용자 입력
 # ============================================
 if st.session_state.greeted and st.session_state.final_type is None:
 
@@ -199,18 +229,30 @@ if st.session_state.greeted and st.session_state.final_type is None:
         m = re.search(r"\[(.*?)\]", reply)
         if m:
             st.session_state.final_type = m.group(1)
-            save_user_card_to_sheet(st.session_state.name, st.session_state.final_type)
+
+            # ⚡ 추천 동반자 생성
+            partner = get_partner_type(st.session_state.final_type)
+            st.session_state.partner = partner
+
+            # ⚡ GoogleSheet 저장
+            save_user_card_to_sheet(st.session_state.name, st.session_state.final_type, partner)
+
             st.rerun()
 
 # ============================================
-# 10) 최종 이미지 출력
+# 11) 최종 카드 출력
 # ============================================
 if st.session_state.final_type:
-    st.subheader(f"🎴 {st.session_state.final_type} — 너의 픽셀 캐릭터 카드!")
+    st.subheader(f"🎴 {st.session_state.final_type} — 너의 도트 RPG 카드!")
 
-    img = generate_tarot_image(st.session_state.final_type)
+    img_bytes = generate_pixel_card_image(
+        st.session_state.final_type,
+        st.session_state.partner
+    )
 
-    if img:
-        st.image(img, width=400)
+    if img_bytes:
+        st.image(img_bytes, width=380)
 
-    st.markdown("🔮 **파우디의 코멘트:** 오늘도 너만의 스타일로 신나게 달려보자! ❄️")
+    st.markdown(f"🤝 **찰떡궁합 동반자 타입:** `{st.session_state.partner}`")
+    st.markdown("🌨 ❄ 세상에 단 하나뿐인 너의 스키/보드 픽셀 카드 완성! ⛷️🏂")
+

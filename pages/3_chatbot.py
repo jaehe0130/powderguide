@@ -113,7 +113,7 @@ high quality pixel sprite
 """
 
     response = requests.post(
-        "https://api-inference.huggingface.co/models/stabilityai/sdxl-turbo",
+        "https://router.huggingface.co/hf-inference/models/black-forest-labs/FLUX.1-dev",
         headers={"Authorization": f"Bearer {HF_TOKEN}"},
         json={"inputs": prompt, "parameters": {"num_inference_steps": 25}}
     )

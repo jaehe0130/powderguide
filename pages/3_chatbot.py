@@ -11,25 +11,17 @@ from openai import OpenAI
 # ============================================
 SYSTEM_PROMPT = """
 너는 PowderGuide의 전용 캐릭터 파우디(Powdi)야.
-
-사용자에게 질문하여 정보를 하나씩 수집해야 한다.
-
-반드시 아래 항목을 순서와 상관없이 모두 물어봐야 한다:
-- 성별 (남자 / 여자 / 기타)
-- 스키어인지 보더인지
-- 라이딩 성향, 스타일, 목표, 성격과 관련된 정보
-
+사용자에게 질문하여 정보를 수집하고,
 모든 정보가 모이면 아래 형식으로 최종 타입만 출력해야 한다.
 
 [최종 타입]
 
 예: [파크형 트릭 메이커 보더]
 
-⚠ 규칙:
+규칙:
 - 질문은 항상 하나씩.
-- 아직 수집되지 않은 정보를 기반으로 질문한다.
 - 타입을 암시하지 않는다.
-- 설명, 조언, 키워드 나열 금지.
+- 설명, 키워드, 조언 등은 절대 출력하지 않는다.
 - 최종 타입 출력 후 아무 말도 하지 않는다.
 """
 
@@ -66,21 +58,6 @@ TYPE_STATS = {
     "안전관리형": {"speed": 50, "skill": 70, "balance": 95},
 }
 
-TYPE_COMPATIBILITY = {
-    "파크형 트릭 메이커": "장인형 카빙러",
-    "속도형": "안정형 팀 플레이어",
-    "파우더 탐험가": "안전관리형",
-    "도전형": "사회성 버디",
-    "사회성 버디": "도전형",
-    "초보 리더형": "장인형 카빙러",
-    "리듬형 카빙러": "화려한 기술형",
-    "안정형 팀 플레이어": "속도형",
-    "화려한 기술형": "리듬형 카빙러",
-    "백컨트리 탐험가": "안전관리형",
-    "안전관리형": "파우더 탐험가",
-}
-
-
 # ============================================
 # 3) Google Sheets 저장
 # ============================================
@@ -102,48 +79,79 @@ def save_user_card_to_sheet(name, final_type, partner):
 # ============================================
 # 4) 추천 동반자 자동 생성 (TYPE 제한)
 # ============================================
-def generate_pixel_card_image(final_type: str, partner: str, gender: str, ski_type: str) -> bytes:
+def get_partner_type(final_type: str) -> str:
+    possible_types = list(TYPE_COLOR_THEME.keys())
+    possible_types_str = ", ".join(possible_types)
+
+    prompt = f"""
+너는 PowderGuide 스키/보드 성향 매칭 전문가야.
+
+아래 목록 중에서 "{final_type}" 와 가장 궁합이 좋은 타입 하나를 선택해.
+선택 가능한 타입 목록:
+[{possible_types_str}]
+
+규칙:
+- 목록 안에서만 선택
+- 새로운 이름 생성 금지
+- 설명 금지
+- 출력은 타입 이름만
+"""
+
+    resp = client.chat.completions.create(
+        model="gpt-4o-mini",
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.1,
+    )
+    return resp.choices[0].message.content.strip()
+
+# ============================================
+# 5) Stability Pixel Card
+# ============================================
+def generate_pixel_card_image(final_type: str, partner: str) -> bytes:
     key = st.secrets["STABILITY_API_KEY"]
 
-    # 성별 처리
-    gender_prompt = "female" if "여" in gender.lower() else "male"
-
-    # 장비 설정
-    if "스키" in ski_type:
-        equipment = "full body pixel art ski character, holding carving skis"
-    else:
-        equipment = "full body pixel art snowboarder character, holding snowboard, doing small trick"
-
-    # 타입 텍스트 이름 정리
+    is_skier = "스키어" in final_type
     type_name = final_type.replace("스키어", "").replace("보더", "").strip()
+
+    gear = (
+        "2D pixel ski character, holding carving skis, goggles, winter jacket"
+        if is_skier else
+        "2D pixel snowboard character, doing small trick, goggles, winter jacket"
+    )
 
     color = TYPE_COLOR_THEME.get(type_name, "retro pastel blue and arcade pink palette")
     stats = TYPE_STATS.get(type_name, {"speed": 70, "skill": 70, "balance": 70})
     spd, skl, bal = stats["speed"], stats["skill"], stats["balance"]
 
     prompt = f"""
-retro 2003 pixel art RPG character card,
+retro 2003-style pixel art RPG character status card,
 inspired by old MapleStory UI,
-wooden rounded frame, thin black pixel outline,
-HP/MP UI bars, pastel pixel icons,
-{equipment}, {gender_prompt}, wearing winter gear,
+wooden style rounded UI panel frame,
+thin black pixel outline,
+small pixel font labels,
+pastel UI buttons, HP/MP bar decoration,
+full body {gear},
 {color},
-snow mountain background,
-pixel text '{final_type}' top center,
-pixel text 'Partner: {partner}' under subtitle,
-pixel stats SPEED:{spd} SKILL:{skl} BALANCE:{bal},
-nostalgic RPG UI, cozy retro feeling,
-16-bit sprite shading, soft pixel lighting,
-game card, centered composition,
+snow resort background,
+pixel text '{final_type}' at top center,
+pixel text 'PARTNER: {partner}' below,
+pixel stats SPEED:{spd}, SKILL:{skl}, BALANCE:{bal},
+clean center composition,
+4:5 card ratio,
+16-bit sprite shading,
+low resolution pixel density,
+game UI, nostalgic and cozy,
 professional pixel art quality
 """
 
     url = "https://api.stability.ai/v2beta/stable-image/generate/core"
+
     headers = {"Authorization": f"Bearer {key}", "Accept": "image/*"}
+
     files = {
         "prompt": (None, prompt),
         "output_format": (None, "png"),
-        "aspect_ratio": (None, "4:5")
+        "aspect_ratio": (None, "4:5"),  # 🔥 변경된 라인
     }
 
     response = requests.post(url, headers=headers, files=files)

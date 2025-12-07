@@ -8,13 +8,12 @@ import pandas as pd
 # ----------------------------------------
 st.set_page_config(page_title="스키장 검색", page_icon="🎿", layout="wide")
 
-WEATHER_API_KEY="fa6a8b3eba521e3e9c6500dd4ca9daf9" = st.secrets["WEATHER_API_KEY"]
+WEATHER_KEY = st.secrets["WEATHER_API_KEY"]  # <-- 수정됨!
 GOOGLE_MAPS_KEY = st.secrets["GOOGLE_MAPS_API_KEY"]
 
 
 # ----------------------------------------
-# Ski Resort Database
-# (사진 / URL / 위도 / 경도 포함)
+# Ski Resort Basic Data (Image / URL / Lat Lon)
 # ----------------------------------------
 ski_resorts = [
     {"name": "휘닉스 평창", "lat": 37.5795, "lon": 128.3257,
@@ -44,15 +43,15 @@ ski_resorts = [
 
 
 # ----------------------------------------
-# Weather API
+# Weather Info
 # ----------------------------------------
 def get_weather(lat, lon):
-    url = f"https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={WEATHER_API_KEY}&units=metric&lang=kr"
-    
+    url = f"https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={WEATHER_KEY}&units=metric&lang=kr"
     res = requests.get(url)
+
     if res.status_code != 200:
         return None
-
+    
     data = res.json()
     return {
         "temp": data["main"]["temp"],
@@ -69,49 +68,43 @@ def get_static_map(lat, lon):
 
 
 # ----------------------------------------
-# PAGE UI
+# UI Layout
 # ----------------------------------------
 st.markdown("""
 <h1 style='text-align:center;'>🎿 스키장 검색</h1>
 <p style='text-align:center; color:gray;'>
-원하는 스키장을 선택해 날씨와 위치를 확인하세요!
+스키장 위치 + 날씨 + 사진 확인하기
 </p>
 """, unsafe_allow_html=True)
 
 st.markdown("---")
 df = pd.DataFrame(ski_resorts)
 
-# 검색
 keyword = st.text_input("스키장 이름 검색", "")
 
 if keyword:
     df = df[df["name"].str.contains(keyword)]
 
-# 출력
 for resort in df.to_dict(orient="records"):
-
-    col1, col2, col3 = st.columns([2, 2, 2])
     st.markdown("---")
+    col1, col2, col3 = st.columns([2, 2, 2])
 
     with col1:
         st.image(resort["image"], caption=resort["name"], use_column_width=True)
 
     with col2:
+        st.subheader("🌤 날씨")
         weather = get_weather(resort["lat"], resort["lon"])
-        st.subheader("🌤️ 날씨 정보")
-        
         if weather:
             st.write(f"온도: **{weather['temp']}℃**")
             st.write(f"체감: **{weather['feels']}℃**")
             st.write(f"상태: **{weather['desc']}**")
         else:
-            st.write("날씨 정보를 가져올 수 없음 ❌")
+            st.write("날씨 정보 없음")
 
-        st.markdown(f"🔗 [스키장 공식 홈페이지]({resort['url']})")
+        st.markdown(f"🔗 [공식 홈페이지 바로가기]({resort['url']})")
 
     with col3:
-        st.subheader("🗺 위치")
+        st.subheader("🗺 지도")
         map_url = get_static_map(resort["lat"], resort["lon"])
         st.image(map_url, use_column_width=True)
-
-st.markdown("---")

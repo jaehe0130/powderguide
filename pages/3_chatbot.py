@@ -79,28 +79,11 @@ def save_user_card_to_sheet(name, final_type, partner):
 # ============================================
 # 4) 추천 동반자 자동 생성 (TYPE 제한)
 # ============================================
-def get_auto_partner_recommendations(final_type: str):
-    base_type = final_type.split()[0]  # '속도형 스키어' -> '속도형'
+def get_partner_type(final_type: str) -> str:
+    possible_types = list(TYPE_COLOR_THEME.keys())
+    possible_types_str = ", ".join(possible_types)
 
-    if base_type not in TYPE_STATS:
-        return ["모두와 잘 맞는 타입"]
-
-    target_stats = TYPE_STATS[base_type]
-
-    scores = []
-    for tname, stats in TYPE_STATS.items():
-        if tname == base_type:
-            continue
-        score = abs(target_stats["speed"] - stats["balance"]) + abs(target_stats["balance"] - stats["speed"])
-        score += abs(target_stats["skill"] - stats["skill"]) // 2  # 기술 유사성 감점
-        scores.append((score, tname))
-
-    scores.sort(key=lambda x: x[0])
-    top3 = [name for _, name in scores[:3]]
-    
-    return top3
-
-t = f"""
+    prompt = f"""
 너는 PowderGuide 스키/보드 성향 매칭 전문가야.
 
 아래 목록 중에서 "{final_type}" 와 가장 궁합이 좋은 타입 하나를 선택해.
@@ -124,49 +107,51 @@ t = f"""
 # ============================================
 # 5) Stability Pixel Card
 # ============================================
-def generate_pixel_card_image(final_type: str, partner: str, gender: str, ski_type: str) -> bytes:
+def generate_pixel_card_image(final_type: str, partner: str) -> bytes:
     key = st.secrets["STABILITY_API_KEY"]
 
-    gender_prompt = "female" if "여" in gender.lower() else "male"
-
-    if "스키" in ski_type:
-        equipment = "full body pixel art ski character, holding skis"
-    else:
-        equipment = "full body pixel art snowboarder character, holding snowboard mid-stance"
-
+    is_skier = "스키어" in final_type
     type_name = final_type.replace("스키어", "").replace("보더", "").strip()
-    color = TYPE_COLOR_THEME.get(type_name, "retro blue and pink palette")
+
+    gear = (
+        "2D pixel ski character, holding carving skis, goggles, winter jacket"
+        if is_skier else
+        "2D pixel snowboard character, doing small trick, goggles, winter jacket"
+    )
+
+    color = TYPE_COLOR_THEME.get(type_name, "retro pastel blue and arcade pink palette")
     stats = TYPE_STATS.get(type_name, {"speed": 70, "skill": 70, "balance": 70})
     spd, skl, bal = stats["speed"], stats["skill"], stats["balance"]
 
     prompt = f"""
-high resin pixel art, retro RPG character status card,
-MapleStory 2003 UI style,
-wooden pixel rounded frame,
-little pixel icon HUD,
-{gender_prompt}, {equipment},
-wearing winter outfit,
+retro 2003-style pixel art RPG character status card,
+inspired by old MapleStory UI,
+wooden style rounded UI panel frame,
+thin black pixel outline,
+small pixel font labels,
+pastel UI buttons, HP/MP bar decoration,
+full body {gear},
 {color},
-snowy town background,
-pixel art text label at top '{final_type}',
-small pixel font section bottom left:
-'SPEED: {spd}',
-'SKILL: {skl}',
-'BALANCE: {bal}',
-separate bottom right pixel box 'PARTNER: {partner}',
-HP/MP bar style UI meter decoration,
-clean symmetrical game menu layout,
-centered composition,
-16-bit pixel shading, nostalgic cozy feeling,
-professional pixel illustration
+snow resort background,
+pixel text '{final_type}' at top center,
+pixel text 'PARTNER: {partner}' below,
+pixel stats SPEED:{spd}, SKILL:{skl}, BALANCE:{bal},
+clean center composition,
+4:5 card ratio,
+16-bit sprite shading,
+low resolution pixel density,
+game UI, nostalgic and cozy,
+professional pixel art quality
 """
 
     url = "https://api.stability.ai/v2beta/stable-image/generate/core"
+
     headers = {"Authorization": f"Bearer {key}", "Accept": "image/*"}
+
     files = {
         "prompt": (None, prompt),
         "output_format": (None, "png"),
-        "aspect_ratio": (None, "4:5")
+        "aspect_ratio": (None, "4:5"),  # 🔥 변경된 라인
     }
 
     response = requests.post(url, headers=headers, files=files)
@@ -177,6 +162,7 @@ professional pixel illustration
         return None
 
     return response.content
+
 
 
 # ============================================

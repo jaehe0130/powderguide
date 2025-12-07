@@ -78,9 +78,18 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 st.markdown("---")
-df = pd.DataFrame(ski_resorts)
+st.subheader("🔍 스키장 이름 또는 지역 검색")
+keyword = st.text_input("스키장 이름 또는 지역 입력", "예: 평창 / 강원도 / 용평 / 경기")
 
-keyword = st.text_input("스키장 이름 검색", "")
+filtered_df = df.copy()
+
+if keyword:
+    keyword_lower = keyword.lower()
+    filtered_df = filtered_df[
+        df["name"].str.lower().str.contains(keyword_lower) |
+        df["region"].str.lower().str.contains(keyword_lower)
+    ]
+
 
 if keyword:
     df = df[df["name"].str.contains(keyword)]

@@ -13,15 +13,14 @@ from io import BytesIO
 # ============================================
 SYSTEM_PROMPT = """
 너는 PowderGuide의 전용 캐릭터 파우디(Powdi)야.
-사용자에게 질문하여 정보를 하나씩 수집해야 한다.
+사용자의 정보를 하나씩 자연스럽게 질문하면서 수집해야 한다.
 
-반드시 아래 항목을 순서와 상관없이 물어봐야 한다:
+필수로 물어야 하는 항목:
 - 성별 (남자 / 여자 / 기타)
 - 스키어인지 보더인지
 - 스타일/성격/라이딩 정보
 
 모든 정보가 수집되면 아래 형식으로 최종 타입만 출력한다.
-
 [최종 타입]
 
 예: [파크형 트릭 메이커 보더]
@@ -86,34 +85,31 @@ def save_user_card_to_sheet(name, final_type, partner, gender, ski_type):
 
 
 # ============================================
-# 4) HuggingFace Image Generation (FREE)
+# 4) HuggingFace Image Generation
 # ============================================
 def generate_pixel_card_image(final_type: str, partner: str, gender: str, ski_type: str):
     HF_TOKEN = st.secrets["HUGGINGFACE_TOKEN"]
 
     gender_prompt = "female" if "여" in gender.lower() else "male"
-
-    if "스키" in ski_type:
-        equipment = "pixel art ski character holding skis"
-    else:
-        equipment = "pixel art snowboarder holding snowboard mid-pose"
+    equipment = "pixel ski character holding skis" if "스키" in ski_type else "pixel snowboard character holding snowboard"
 
     type_name = final_type.replace("스키어", "").replace("보더", "").strip()
-    color = TYPE_COLOR_THEME.get(type_name, "retro arcade game palette")
+    color = TYPE_COLOR_THEME.get(type_name, "retro arcade palette")
     stats = TYPE_STATS.get(type_name, {"speed": 70, "skill": 70, "balance": 70})
     spd, skl, bal = stats["speed"], stats["skill"], stats["balance"]
 
     prompt = f"""
-old retro pixel RPG character card UI,
+retro japanese pixel RPG card UI,
 {gender_prompt}, {equipment},
 {color},
-snow town background,
-MapleStory UI style,
-pixel text '{final_type}' at top,
-pixel footer showing:
-'SPEED {spd} | SKILL {skl} | BALANCE {bal}',
-pixel label bottom right: 'Partner: {partner}',
-16-bit pixel shading, cozy nostalgic vibe
+snow mountain town background,
+pixel text header '{final_type}',
+pixel footer showing 'Speed {spd} | Skill {skl} | Balance {bal}',
+pixel note 'Partner: {partner}',
+16-bit pixel shading,
+nostalgic maple story style,
+game UI window frame,
+high quality pixel sprite
 """
 
     response = requests.post(
@@ -135,7 +131,7 @@ pixel label bottom right: 'Partner: {partner}',
 # ============================================
 client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 
-st.title("⛷️ 파우디 챗봇 ❄ FREE VERSION")
+st.title("⛷️❄ PowderGuide — FREE Pixel Card Version (HuggingFace)")
 
 # ============================================
 # Session
@@ -151,13 +147,13 @@ for key in ["name", "gender", "ski_type", "final_type", "partner"]:
 # 이름 입력
 # ============================================
 if st.session_state.name is None:
-    name = st.text_input("닉네임을 알려줘!")
+    name = st.text_input("닉네임을 알려줘! ⛷️")
     if name:
         st.session_state.name = name
         st.rerun()
 
 # ============================================
-# 대화 입력
+# 대화 진행
 # ============================================
 if st.session_state.final_type is None:
 
@@ -167,14 +163,14 @@ if st.session_state.final_type is None:
         st.chat_message("user").write(user_input)
         st.session_state.messages.append({"role": "user", "content": user_input})
 
-        # extract gender
+        # gender 감지
         if st.session_state.gender is None:
-            if re.search(r"여|girl|female", user_input, re.IGNORECASE):
+            if re.search(r"여|걸|female", user_input, re.IGNORECASE):
                 st.session_state.gender = "여자"
-            elif re.search(r"남|boy|male", user_input, re.IGNORECASE):
+            elif re.search(r"남|보이|male", user_input, re.IGNORECASE):
                 st.session_state.gender = "남자"
 
-        # extract ski/board
+        # 스키/보드 감지
         if st.session_state.ski_type is None:
             if "보드" in user_input:
                 st.session_state.ski_type = "보더"
@@ -194,9 +190,7 @@ if st.session_state.final_type is None:
         m = re.search(r"\[(.*?)\]", reply)
         if m:
             st.session_state.final_type = m.group(1)
-
-            # partner selecting GPT
-            st.session_state.partner = "최적 매칭 준비중"
+            st.session_state.partner = "매칭중"
 
             save_user_card_to_sheet(
                 st.session_state.name,
@@ -205,15 +199,15 @@ if st.session_state.final_type is None:
                 st.session_state.gender,
                 st.session_state.ski_type
             )
-            st.rerun()
 
+            st.rerun()
 
 # ============================================
 # 카드 출력
 # ============================================
 if st.session_state.final_type:
 
-    st.subheader(f"🎴 {st.session_state.final_type} — 도트 RPG 카드!")
+    st.subheader(f"🎴 {st.session_state.final_type} — Pixel RPG Card")
 
     img = generate_pixel_card_image(
         st.session_state.final_type,
@@ -225,5 +219,4 @@ if st.session_state.final_type:
     if img:
         st.image(img, width=380)
 
-    st.markdown("🌨 ❄ 너의 PowderGuide 픽셀 캐릭터 완성!")
-
+    st.markdown("🌨 ❄ **PowderGuide Pixel Character Complete!**")

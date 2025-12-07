@@ -8,7 +8,7 @@ import pandas as pd
 # ----------------------------------------
 st.set_page_config(page_title="스키장 검색", page_icon="🎿", layout="wide")
 
-OPEN_WEATHER_KEY = st.secrets["OPEN_WEATHER_API_KEY"]
+WEATHER_API_KEY="fa6a8b3eba521e3e9c6500dd4ca9daf9" = st.secrets["WEATHER_API_KEY"]
 GOOGLE_MAPS_KEY = st.secrets["GOOGLE_MAPS_API_KEY"]
 
 
@@ -47,7 +47,7 @@ ski_resorts = [
 # Weather API
 # ----------------------------------------
 def get_weather(lat, lon):
-    url = f"https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={OPENWEATHER_KEY}&units=metric&lang=kr"
+    url = f"https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={WEATHER_API_KEY}&units=metric&lang=kr"
     
     res = requests.get(url)
     if res.status_code != 200:

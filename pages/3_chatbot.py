@@ -79,11 +79,28 @@ def save_user_card_to_sheet(name, final_type, partner):
 # ============================================
 # 4) 추천 동반자 자동 생성 (TYPE 제한)
 # ============================================
-def get_partner_type(final_type: str) -> str:
-    possible_types = list(TYPE_COLOR_THEME.keys())
-    possible_types_str = ", ".join(possible_types)
+def get_auto_partner_recommendations(final_type: str):
+    base_type = final_type.split()[0]  # '속도형 스키어' -> '속도형'
 
-    prompt = f"""
+    if base_type not in TYPE_STATS:
+        return ["모두와 잘 맞는 타입"]
+
+    target_stats = TYPE_STATS[base_type]
+
+    scores = []
+    for tname, stats in TYPE_STATS.items():
+        if tname == base_type:
+            continue
+        score = abs(target_stats["speed"] - stats["balance"]) + abs(target_stats["balance"] - stats["speed"])
+        score += abs(target_stats["skill"] - stats["skill"]) // 2  # 기술 유사성 감점
+        scores.append((score, tname))
+
+    scores.sort(key=lambda x: x[0])
+    top3 = [name for _, name in scores[:3]]
+    
+    return top3
+
+t = f"""
 너는 PowderGuide 스키/보드 성향 매칭 전문가야.
 
 아래 목록 중에서 "{final_type}" 와 가장 궁합이 좋은 타입 하나를 선택해.

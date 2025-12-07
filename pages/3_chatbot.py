@@ -5,28 +5,37 @@ import gspread
 import re
 from google.oauth2.service_account import Credentials
 from openai import OpenAI
+from PIL import Image
+from io import BytesIO
 
 # ============================================
 # 1) SYSTEM PROMPT
 # ============================================
 SYSTEM_PROMPT = """
 너는 PowderGuide의 전용 캐릭터 파우디(Powdi)야.
-사용자에게 질문하여 정보를 수집하고,
-모든 정보가 모이면 아래 형식으로 최종 타입만 출력해야 한다.
+사용자에게 질문하여 정보를 하나씩 수집해야 한다.
+
+반드시 아래 항목을 순서와 상관없이 물어봐야 한다:
+- 성별 (남자 / 여자 / 기타)
+- 스키어인지 보더인지
+- 스타일/성격/라이딩 정보
+
+모든 정보가 수집되면 아래 형식으로 최종 타입만 출력한다.
 
 [최종 타입]
 
 예: [파크형 트릭 메이커 보더]
 
-규칙:
+⚠ 규칙:
 - 질문은 항상 하나씩.
+- 아직 수집되지 않은 정보를 기반으로 질문한다.
 - 타입을 암시하지 않는다.
-- 설명, 키워드, 조언 등은 절대 출력하지 않는다.
+- 설명, 조언, 키워드 나열 금지.
 - 최종 타입 출력 후 아무 말도 하지 않는다.
 """
 
 # ============================================
-# 2) Type Theme & Stats
+# 2) TYPE Theme & Stats
 # ============================================
 TYPE_COLOR_THEME = {
     "도전형": "fiery red and orange palette",
@@ -70,129 +79,76 @@ def connect_gsheet():
     gc = gspread.authorize(creds)
     return gc.open_by_key(SHEET_ID)
 
-def save_user_card_to_sheet(name, final_type, partner):
+def save_user_card_to_sheet(name, final_type, partner, gender, ski_type):
     sh = connect_gsheet()
     ws = sh.sheet1
-    ws.append_row([name, final_type, partner])
+    ws.append_row([name, final_type, partner, gender, ski_type])
 
 
 # ============================================
-# 4) 추천 동반자 자동 생성 (TYPE 제한)
+# 4) HuggingFace Image Generation (FREE)
 # ============================================
-def get_partner_type(final_type: str) -> str:
-    possible_types = list(TYPE_COLOR_THEME.keys())
-    possible_types_str = ", ".join(possible_types)
+def generate_pixel_card_image(final_type: str, partner: str, gender: str, ski_type: str):
+    HF_TOKEN = st.secrets["HUGGINGFACE_TOKEN"]
 
-    prompt = f"""
-너는 PowderGuide 스키/보드 성향 매칭 전문가야.
+    gender_prompt = "female" if "여" in gender.lower() else "male"
 
-아래 목록 중에서 "{final_type}" 와 가장 궁합이 좋은 타입 하나를 선택해.
-선택 가능한 타입 목록:
-[{possible_types_str}]
+    if "스키" in ski_type:
+        equipment = "pixel art ski character holding skis"
+    else:
+        equipment = "pixel art snowboarder holding snowboard mid-pose"
 
-규칙:
-- 목록 안에서만 선택
-- 새로운 이름 생성 금지
-- 설명 금지
-- 출력은 타입 이름만
-"""
-
-    resp = client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=[{"role": "user", "content": prompt}],
-        temperature=0.1,
-    )
-    return resp.choices[0].message.content.strip()
-
-# ============================================
-# 5) Stability Pixel Card
-# ============================================
-def generate_pixel_card_image(final_type: str, partner: str) -> bytes:
-    key = st.secrets["STABILITY_API_KEY"]
-
-    is_skier = "스키어" in final_type
     type_name = final_type.replace("스키어", "").replace("보더", "").strip()
-
-    gear = (
-        "2D pixel ski character, holding carving skis, goggles, winter jacket"
-        if is_skier else
-        "2D pixel snowboard character, doing small trick, goggles, winter jacket"
-    )
-
-    color = TYPE_COLOR_THEME.get(type_name, "retro pastel blue and arcade pink palette")
+    color = TYPE_COLOR_THEME.get(type_name, "retro arcade game palette")
     stats = TYPE_STATS.get(type_name, {"speed": 70, "skill": 70, "balance": 70})
     spd, skl, bal = stats["speed"], stats["skill"], stats["balance"]
 
     prompt = f"""
-retro 2003-style pixel art RPG character status card,
-inspired by old MapleStory UI,
-wooden style rounded UI panel frame,
-thin black pixel outline,
-small pixel font labels,
-pastel UI buttons, HP/MP bar decoration,
-full body {gear},
+old retro pixel RPG character card UI,
+{gender_prompt}, {equipment},
 {color},
-snow resort background,
-pixel text '{final_type}' at top center,
-pixel text 'PARTNER: {partner}' below,
-pixel stats SPEED:{spd}, SKILL:{skl}, BALANCE:{bal},
-clean center composition,
-4:5 card ratio,
-16-bit sprite shading,
-low resolution pixel density,
-game UI, nostalgic and cozy,
-professional pixel art quality
+snow town background,
+MapleStory UI style,
+pixel text '{final_type}' at top,
+pixel footer showing:
+'SPEED {spd} | SKILL {skl} | BALANCE {bal}',
+pixel label bottom right: 'Partner: {partner}',
+16-bit pixel shading, cozy nostalgic vibe
 """
 
-    url = "https://api.stability.ai/v2beta/stable-image/generate/core"
-
-    headers = {"Authorization": f"Bearer {key}", "Accept": "image/*"}
-
-    files = {
-        "prompt": (None, prompt),
-        "output_format": (None, "png"),
-        "aspect_ratio": (None, "4:5"),  # 🔥 변경된 라인
-    }
-
-    response = requests.post(url, headers=headers, files=files)
+    response = requests.post(
+        "https://api-inference.huggingface.co/models/stabilityai/sdxl-turbo",
+        headers={"Authorization": f"Bearer {HF_TOKEN}"},
+        json={"inputs": prompt, "parameters": {"num_inference_steps": 25}}
+    )
 
     if response.status_code != 200:
-        st.error("⚠ Stability API 오류 발생")
+        st.error("⚠ HuggingFace API 오류")
         st.code(response.text)
         return None
 
-    return response.content
-
+    return Image.open(BytesIO(response.content))
 
 
 # ============================================
-# 6) OpenAI GPT
+# 5) GPT
 # ============================================
 client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 
-# ============================================
-# 7) 상태 변수
-# ============================================
-st.title("⛷️ 파우디 챗봇 ❄️")
+st.title("⛷️ 파우디 챗봇 ❄ FREE VERSION")
 
+# ============================================
+# Session
+# ============================================
 if "messages" not in st.session_state:
     st.session_state.messages = [{"role": "system", "content": SYSTEM_PROMPT}]
 
-if "name" not in st.session_state:
-    st.session_state.name = None
-
-if "greeted" not in st.session_state:
-    st.session_state.greeted = False
-
-if "final_type" not in st.session_state:
-    st.session_state.final_type = None
-
-if "partner" not in st.session_state:
-    st.session_state.partner = None
-
+for key in ["name", "gender", "ski_type", "final_type", "partner"]:
+    if key not in st.session_state:
+        st.session_state[key] = None
 
 # ============================================
-# 8) 이름 입력
+# 이름 입력
 # ============================================
 if st.session_state.name is None:
     name = st.text_input("닉네임을 알려줘!")
@@ -201,24 +157,31 @@ if st.session_state.name is None:
         st.rerun()
 
 # ============================================
-# 9) 첫 인사
+# 대화 입력
 # ============================================
-if st.session_state.name and not st.session_state.greeted:
-    msg = f"안녕 {st.session_state.name}!⛷️❄️ 어떤 스타일인지 알아보고 픽셀카드로 만들어줄게! 스키어야? 보더야?"
-    st.chat_message("assistant").write(msg)
-    st.session_state.messages.append({"role": "assistant", "content": msg})
-    st.session_state.greeted = True
-
-# ============================================
-# 10) 사용자 입력
-# ============================================
-if st.session_state.greeted and st.session_state.final_type is None:
+if st.session_state.final_type is None:
 
     user_input = st.chat_input("파우디에게 말해줘!")
     if user_input:
+
         st.chat_message("user").write(user_input)
         st.session_state.messages.append({"role": "user", "content": user_input})
 
+        # extract gender
+        if st.session_state.gender is None:
+            if re.search(r"여|girl|female", user_input, re.IGNORECASE):
+                st.session_state.gender = "여자"
+            elif re.search(r"남|boy|male", user_input, re.IGNORECASE):
+                st.session_state.gender = "남자"
+
+        # extract ski/board
+        if st.session_state.ski_type is None:
+            if "보드" in user_input:
+                st.session_state.ski_type = "보더"
+            elif "스키" in user_input:
+                st.session_state.ski_type = "스키어"
+
+        # GPT reply
         resp = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=st.session_state.messages
@@ -227,32 +190,40 @@ if st.session_state.greeted and st.session_state.final_type is None:
         st.chat_message("assistant").write(reply)
         st.session_state.messages.append({"role": "assistant", "content": reply})
 
+        # detect final type
         m = re.search(r"\[(.*?)\]", reply)
         if m:
             st.session_state.final_type = m.group(1)
 
-            # ⚡ 추천 동반자 생성
-            partner = get_partner_type(st.session_state.final_type)
-            st.session_state.partner = partner
+            # partner selecting GPT
+            st.session_state.partner = "최적 매칭 준비중"
 
-            # ⚡ GoogleSheet 저장
-            save_user_card_to_sheet(st.session_state.name, st.session_state.final_type, partner)
-
+            save_user_card_to_sheet(
+                st.session_state.name,
+                st.session_state.final_type,
+                st.session_state.partner,
+                st.session_state.gender,
+                st.session_state.ski_type
+            )
             st.rerun()
 
+
 # ============================================
-# 11) 최종 카드 출력
+# 카드 출력
 # ============================================
 if st.session_state.final_type:
-    st.subheader(f"🎴 {st.session_state.final_type} — 너의 도트 RPG 카드!")
 
-    img_bytes = generate_pixel_card_image(
+    st.subheader(f"🎴 {st.session_state.final_type} — 도트 RPG 카드!")
+
+    img = generate_pixel_card_image(
         st.session_state.final_type,
-        st.session_state.partner
+        st.session_state.partner,
+        st.session_state.gender,
+        st.session_state.ski_type
     )
 
-    if img_bytes:
-        st.image(img_bytes, width=380)
+    if img:
+        st.image(img, width=380)
 
-    st.markdown(f"🤝 **찰떡궁합 동반자 타입:** `{st.session_state.partner}`")
-    st.markdown("🌨 ❄ 세상에 단 하나뿐인 너의 스키/보드 픽셀 카드 완성! ⛷️🏂")
+    st.markdown("🌨 ❄ 너의 PowderGuide 픽셀 캐릭터 완성!")
+

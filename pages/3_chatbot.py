@@ -137,7 +137,7 @@ pixel text '{final_type}' at top center,
 pixel text 'PARTNER: {partner}' below,
 pixel stats SPEED:{spd}, SKILL:{skl}, BALANCE:{bal},
 clean center composition,
-3:4 vertical card,
+4:5 card ratio,
 16-bit sprite shading,
 low resolution pixel density,
 game UI, nostalgic and cozy,
@@ -151,7 +151,7 @@ professional pixel art quality
     files = {
         "prompt": (None, prompt),
         "output_format": (None, "png"),
-        "aspect_ratio": (None, "3:4"),
+        "aspect_ratio": (None, "4:5"),  # 🔥 변경된 라인
     }
 
     response = requests.post(url, headers=headers, files=files)

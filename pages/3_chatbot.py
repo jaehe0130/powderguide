@@ -131,7 +131,7 @@ high quality pixel sprite
 # ============================================
 client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
 
-st.title("🤖 파우디의 챗봇")
+st.title("🤖 파우디 챗봇")
 
 # ============================================
 # Session
